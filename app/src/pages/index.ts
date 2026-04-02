@@ -1,0 +1,9 @@
+export { default as LoginPage } from './LoginPage';
+export { default as DashboardPage } from './DashboardPage';
+export { default as EmployeesPage } from './EmployeesPage';
+export { default as EvaluationsPage } from './EvaluationsPage';
+export { default as TeamsPage } from './TeamsPage';
+export { default as ProfilePage } from './ProfilePage';
+export { default as SettingsPage } from './SettingsPage';
+export { default as QuizzesPage } from './QuizzesPage';
+export { default as QuizDetailPage } from './QuizDetailPage';

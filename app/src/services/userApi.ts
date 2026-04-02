@@ -1,0 +1,46 @@
+import api from './api';
+
+export const getAllUsers = (params?: { role?: string; team?: string; search?: string }) => {
+  return api.get('/users', { params });
+};
+
+export const getUserById = (id: string) => {
+  return api.get(`/users/${id}`);
+};
+
+export const createUser = (data: {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  team?: string;
+  level?: string;
+}) => {
+  return api.post('/users', data);
+};
+
+export const updateUser = (id: string, data: {
+  name?: string;
+  email?: string;
+  team?: string;
+  level?: string;
+  isActive?: boolean;
+}) => {
+  return api.put(`/users/${id}`, data);
+};
+
+export const deleteUser = (id: string) => {
+  return api.delete(`/users/${id}`);
+};
+
+export const getEmployeesByTeam = (team: string) => {
+  return api.get(`/users/team/${team}`);
+};
+
+export const getTeamLeaders = () => {
+  return api.get('/users/team-leaders');
+};
+
+export const moveEmployee = (data: { employeeId: string; newTeam: string }) => {
+  return api.post('/users/move', data);
+};
