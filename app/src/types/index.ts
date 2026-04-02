@@ -50,6 +50,7 @@ export interface Quiz {
   _id: string;
   title: string;
   description?: string;
+  targetTeam?: string | null;
   createdBy: string | User;
   questions: Question[];
   totalPoints: number;
@@ -143,4 +144,29 @@ export interface DemoCredentials {
     email: string;
     password: string;
   }[];
+  employees: {
+    name: string;
+    team: string;
+    email: string;
+    password: string;
+  }[];
+}
+
+export interface WorkLogItem {
+  task: string;
+  hours: number;
+  notes?: string;
+}
+
+export interface WorkLog {
+  _id: string;
+  employeeId: string | User;
+  team: string;
+  date: string;
+  items: WorkLogItem[];
+  totalHours: number;
+  status: 'submitted' | 'reviewed';
+  leaderComment?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

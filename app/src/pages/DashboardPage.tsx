@@ -6,12 +6,17 @@ import {
   Award,
   Building2,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  BrainCircuit,
+  CalendarDays,
+  Clock3
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
 import { getDashboardAnalytics, getTeamLeaderPerformance } from '@/services/analyticsApi';
+import { getAllQuizzes } from '@/services/quizApi';
+import { getMyWorkLogs } from '@/services/workLogApi';
 import type { DashboardAnalytics } from '@/types';
 import { 
   XAxis, 
@@ -31,6 +36,7 @@ const COLORS = ['#F26B21', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 const DashboardPage = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+  const isEmployee = user?.role === 'employee';
 
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['dashboardAnalytics'],
@@ -47,6 +53,24 @@ const DashboardPage = () => {
       return response.data;
     },
     enabled: isAdmin
+  });
+
+  const { data: employeeQuizzes } = useQuery({
+    queryKey: ['dashboardEmployeeQuizzes'],
+    queryFn: async () => {
+      const response = await getAllQuizzes({ isActive: true });
+      return response.data;
+    },
+    enabled: isEmployee
+  });
+
+  const { data: employeeLogs } = useQuery({
+    queryKey: ['dashboardEmployeeLogs'],
+    queryFn: async () => {
+      const response = await getMyWorkLogs();
+      return response.data;
+    },
+    enabled: isEmployee
   });
 
   const StatCard = ({ 
@@ -90,6 +114,73 @@ const DashboardPage = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F26B21]"></div>
+      </div>
+    );
+  }
+
+  if (isEmployee) {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLog = (employeeLogs || []).find((log: any) => log.date === today);
+    const availableQuizzes = (employeeQuizzes || []).filter((quiz: any) => !quiz.hasAttempted && quiz.isActive);
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">My Dashboard</h1>
+          <p className="text-white/60">Your team exams and today's work summary.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <BrainCircuit className="w-5 h-5 text-[#F26B21]" />
+                Team Exams
+              </CardTitle>
+              <CardDescription className="text-white/60">Assigned quizzes from your team leader</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {availableQuizzes.length === 0 ? (
+                <p className="text-white/60 text-sm">No active quizzes assigned to your team yet.</p>
+              ) : (
+                availableQuizzes.slice(0, 4).map((quiz: any) => (
+                  <div key={quiz._id} className="p-3 rounded-lg border border-white/10 bg-white/5">
+                    <p className="text-white font-medium">{quiz.title}</p>
+                    <p className="text-white/50 text-xs mt-1">{quiz.questions?.length || 0} questions • {quiz.timeLimit} min</p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-[#F26B21]" />
+                Today's Work
+              </CardTitle>
+              <CardDescription className="text-white/60">Tasks submitted in your daily log</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!todayLog ? (
+                <p className="text-white/60 text-sm">You have not submitted your daily tasks yet.</p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-white/70">
+                    <Clock3 className="w-4 h-4 text-[#F26B21]" />
+                    <span>Total: {todayLog.totalHours} / 7 hours</span>
+                  </div>
+                  {todayLog.items.map((item: any, index: number) => (
+                    <div key={index} className="p-3 rounded-lg border border-white/10 bg-white/5">
+                      <p className="text-white text-sm font-medium">{item.task}</p>
+                      <p className="text-white/50 text-xs mt-1">{item.hours}h {item.notes ? `• ${item.notes}` : ''}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

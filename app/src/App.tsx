@@ -10,6 +10,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import QuizzesPage from '@/pages/QuizzesPage';
 import QuizDetailPage from '@/pages/QuizDetailPage';
+import WorkLogsPage from '@/pages/WorkLogsPage';
 import TeamsPage from '@/pages/TeamsPage';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -25,7 +26,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -38,13 +39,14 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/employees" element={<EmployeesPage />} />
-              <Route path="/evaluations" element={<EvaluationsPage />} />
+              <Route path="/employees" element={user?.role === 'employee' ? <Navigate to="/dashboard" replace /> : <EmployeesPage />} />
+              <Route path="/evaluations" element={user?.role === 'employee' ? <Navigate to="/dashboard" replace /> : <EvaluationsPage />} />
               <Route path="/teams" element={<TeamsPage />} />
               <Route path="/quizzes" element={<QuizzesPage />} />
               <Route path="/quizzes/:id" element={<QuizDetailPage />} />
+              <Route path="/work-logs" element={<WorkLogsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings" element={user?.role === 'employee' ? <Navigate to="/dashboard" replace /> : <SettingsPage />} />
             </Route>
           </Route>
           <Route path="/" element={<Navigate to="/dashboard" />} />

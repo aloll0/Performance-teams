@@ -140,7 +140,7 @@ const LoginPage = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="admin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-white/5">
+              <TabsList className="grid w-full grid-cols-3 bg-white/5">
                 <TabsTrigger value="admin" className="data-[state=active]:bg-[#F26B21] data-[state=active]:text-white">
                   <Shield className="w-4 h-4 mr-2" />
                   Admin
@@ -148,6 +148,9 @@ const LoginPage = () => {
                 <TabsTrigger value="leaders" className="data-[state=active]:bg-[#F26B21] data-[state=active]:text-white">
                   <Users className="w-4 h-4 mr-2" />
                   Team Leaders
+                </TabsTrigger>
+                <TabsTrigger value="employees" className="data-[state=active]:bg-[#F26B21] data-[state=active]:text-white">
+                  Employees
                 </TabsTrigger>
               </TabsList>
 
@@ -189,6 +192,23 @@ const LoginPage = () => {
                         </div>
                         <Users className="w-6 h-6 text-white/30 group-hover:text-[#F26B21] transition-colors" />
                       </div>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="employees" className="mt-4">
+                <div className="space-y-2 max-h-80 overflow-auto pr-2">
+                  {demoCredentials?.employees?.map((employee, index) => (
+                    <button
+                      key={`${employee.email}-${index}`}
+                      onClick={() => fillCredentials(employee.email, employee.password)}
+                      className="w-full p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#F26B21]/50 transition-all text-left"
+                    >
+                      <p className="text-white font-medium">{employee.name}</p>
+                      <p className="text-white/50 text-sm">{employee.team}</p>
+                      <p className="text-white/50 text-sm">{employee.email}</p>
+                      <p className="text-white/30 text-xs">Password: {employee.password}</p>
                     </button>
                   ))}
                 </div>

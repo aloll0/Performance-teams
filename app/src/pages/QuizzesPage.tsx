@@ -40,7 +40,7 @@ const QuizzesPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const isAdmin = user?.role === 'admin';
+  const canManageQuizzes = user?.role === 'admin' || user?.role === 'team_leader';
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -51,6 +51,7 @@ const QuizzesPage = () => {
     title: '',
     description: '',
     timeLimit: 30,
+    targetTeam: user?.role === 'team_leader' ? user.team : '',
     questions: [{ question: '', options: ['', '', '', ''], correctAnswer: 0, points: 1 }]
   });
 
@@ -105,6 +106,7 @@ const QuizzesPage = () => {
       title: '',
       description: '',
       timeLimit: 30,
+      targetTeam: user?.role === 'team_leader' ? user.team : '',
       questions: [{ question: '', options: ['', '', '', ''], correctAnswer: 0, points: 1 }]
     });
   };
@@ -135,7 +137,11 @@ const QuizzesPage = () => {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    const payload = {
+      ...formData,
+      targetTeam: user?.role === 'team_leader' ? user.team : (formData.targetTeam || null)
+    };
+    createMutation.mutate(payload);
   };
 
   const handleDelete = (id: string) => {
@@ -150,6 +156,7 @@ const QuizzesPage = () => {
       title: quiz.title,
       description: quiz.description || '',
       timeLimit: quiz.timeLimit,
+      targetTeam: quiz.targetTeam || '',
       questions: quiz.questions.map((q: any) => ({
         question: q.question,
         options: q.options,
@@ -186,7 +193,7 @@ const QuizzesPage = () => {
           <h1 className="text-2xl font-bold text-white">Interview Quizzes</h1>
           <p className="text-white/60">Test your skills and knowledge</p>
         </div>
-        {isAdmin && (
+        {canManageQuizzes && (
           <Button 
             onClick={() => {
               resetForm();
@@ -234,7 +241,7 @@ const QuizzesPage = () => {
                         </CardDescription>
                       </div>
                     </div>
-                    {isAdmin && (
+                    {canManageQuizzes && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
@@ -376,6 +383,17 @@ const QuizzesPage = () => {
                 required
               />
             </div>
+            {user?.role === 'admin' && (
+              <div className="space-y-2">
+                <Label>Target Team (optional)</Label>
+                <Input
+                  value={formData.targetTeam}
+                  onChange={(e) => setFormData({ ...formData, targetTeam: e.target.value })}
+                  className="bg-white/5 border-white/10 text-white"
+                  placeholder="Example: Debuger"
+                />
+              </div>
+            )}
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">

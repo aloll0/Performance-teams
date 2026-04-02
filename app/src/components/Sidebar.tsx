@@ -5,6 +5,7 @@ import {
   ClipboardCheck, 
   Building2, 
   BrainCircuit,
+  NotebookPen,
   UserCircle, 
   Settings,
   LogOut
@@ -17,12 +18,13 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/employees', label: 'Employees', icon: Users },
-    { path: '/evaluations', label: 'Evaluations', icon: ClipboardCheck },
+    ...(user?.role !== 'employee' ? [{ path: '/employees', label: 'Employees', icon: Users }] : []),
+    ...(user?.role !== 'employee' ? [{ path: '/evaluations', label: 'Evaluations', icon: ClipboardCheck }] : []),
     ...(user?.role === 'admin' ? [{ path: '/teams', label: 'Teams', icon: Building2 }] : []),
     { path: '/quizzes', label: 'Quizzes', icon: BrainCircuit },
+    { path: '/work-logs', label: 'Daily Work Log', icon: NotebookPen },
     { path: '/profile', label: 'Profile', icon: UserCircle },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    ...(user?.role !== 'employee' ? [{ path: '/settings', label: 'Settings', icon: Settings }] : []),
   ];
 
   return (

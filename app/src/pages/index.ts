@@ -7,3 +7,4 @@ export { default as ProfilePage } from './ProfilePage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as QuizzesPage } from './QuizzesPage';
 export { default as QuizDetailPage } from './QuizDetailPage';
+export { default as WorkLogsPage } from './WorkLogsPage';

@@ -25,6 +25,7 @@ const QuizDetailPage = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [isAutoSubmitTriggered, setIsAutoSubmitTriggered] = useState(false);
 
   const { data: quiz, isLoading } = useQuery({
     queryKey: ['quiz', id],
@@ -88,9 +89,48 @@ const QuizDetailPage = () => {
   };
 
   const handleSubmit = () => {
+    if (submitMutation.isPending || isSubmitted) return;
     const formattedAnswers = answers.map(answer => ({ selectedAnswer: answer }));
     submitMutation.mutate({ id: id!, data: { answers: formattedAnswers } });
   };
+
+  useEffect(() => {
+    if (!quiz || quiz.hasAttempted || isSubmitted) return;
+
+    const forceSubmit = () => {
+      if (isAutoSubmitTriggered) return;
+      setIsAutoSubmitTriggered(true);
+      toast.error('Quiz auto-submitted because you left the exam page.');
+      handleSubmit();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        forceSubmit();
+      }
+    };
+
+    const onWindowBlur = () => {
+      forceSubmit();
+    };
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isSubmitted) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('beforeunload', onBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onWindowBlur);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [quiz, isSubmitted, isAutoSubmitTriggered, answers]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -215,7 +255,11 @@ const QuizDetailPage = () => {
       <div className="flex items-center justify-between">
         <Button 
           variant="outline" 
-          onClick={() => navigate('/quizzes')}
+          onClick={() => {
+            toast.error('Leaving the quiz will auto-submit your answers.');
+            handleSubmit();
+            navigate('/quizzes');
+          }}
           className="border-white/20 text-white hover:bg-white/10"
         >
           <ChevronLeft className="w-4 h-4 mr-2" />

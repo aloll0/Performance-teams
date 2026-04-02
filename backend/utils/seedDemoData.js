@@ -97,6 +97,19 @@ function getPerformanceLevel(score) {
   return 'Poor';
 }
 
+function toAccountName(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function buildEmployeeCredentials(employee) {
+  const accountName = toAccountName(employee.name);
+  const teamDomain = String(employee.team || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return {
+    email: `${accountName}@${teamDomain}.com`,
+    password: accountName
+  };
+}
+
 async function seedDemoData() {
   let admin = await User.findOne({ email: adminCredentials.email });
   if (!admin) {
@@ -140,19 +153,25 @@ async function seedDemoData() {
 
   const employees = [];
   for (const employee of employeeBlueprints) {
-    const email = `${employee.id}@demo.com`;
+    const credentials = buildEmployeeCredentials(employee);
+    const email = credentials.email;
     let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.findOne({ name: employee.name, team: employee.team, role: 'employee' });
+    }
     if (!user) {
       user = await User.create({
         name: employee.name,
         email,
-        password: 'Demo@12345',
+        password: credentials.password,
         role: 'employee',
         team: employee.team,
         level: employee.level
       });
     } else {
       user.name = employee.name;
+      user.email = email;
+      user.password = credentials.password;
       user.role = 'employee';
       user.team = employee.team;
       user.level = employee.level;

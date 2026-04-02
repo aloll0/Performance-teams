@@ -2,6 +2,8 @@ const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
 
+const toAccountName = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 // Login
 const login = async (req, res) => {
   try {
@@ -109,6 +111,10 @@ const changePassword = async (req, res) => {
 // Get demo credentials
 const getDemoCredentials = async (req, res) => {
   try {
+    const employees = await User.find({ role: 'employee', isActive: true })
+      .select('name team email')
+      .sort({ team: 1, name: 1 });
+
     const demoCredentials = {
       admin: {
         email: 'admin@demo.com',
@@ -122,7 +128,13 @@ const getDemoCredentials = async (req, res) => {
         { team: 'Wordpress', email: 'wordpress@thimify.com', password: 'Wordpress@123' },
         { team: 'Taster', email: 'taster@thimify.com', password: 'Taster@123' },
         { team: 'UIUX', email: 'uiux@thimify.com', password: 'Uiux@123' }
-      ]
+      ],
+      employees: employees.map((employee) => ({
+        name: employee.name,
+        team: employee.team,
+        email: employee.email,
+        password: toAccountName(employee.name)
+      }))
     };
 
     res.json(demoCredentials);

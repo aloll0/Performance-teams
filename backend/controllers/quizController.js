@@ -2,6 +2,12 @@ const { validationResult } = require('express-validator');
 const Quiz = require('../models/Quiz');
 const User = require('../models/User');
 
+const canAccessQuizByTeam = (quiz, user) => {
+  if (user.role === 'admin') return true;
+  if (!quiz.targetTeam) return true;
+  return quiz.targetTeam === user.team;
+};
+
 // Get all quizzes
 const getAllQuizzes = async (req, res) => {
   try {
@@ -10,6 +16,15 @@ const getAllQuizzes = async (req, res) => {
 
     if (isActive !== undefined) {
       query.isActive = isActive === 'true';
+    }
+
+    if (req.user.role === 'employee') {
+      query.isActive = true;
+      query.$or = [{ targetTeam: req.user.team }, { targetTeam: null }, { targetTeam: { $exists: false } }];
+    }
+
+    if (req.user.role === 'team_leader') {
+      query.$or = [{ targetTeam: req.user.team }, { createdBy: req.user.id }];
     }
 
     const quizzes = await Quiz.find(query)
@@ -52,6 +67,10 @@ const getQuizById = async (req, res) => {
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
+    if (!canAccessQuizByTeam(quiz, req.user)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     // Check if user has already attempted
     const hasAttempted = quiz.results.some(
       r => r.userId.toString() === req.user.id
@@ -79,7 +98,7 @@ const getQuizById = async (req, res) => {
   }
 };
 
-// Create new quiz (Admin only)
+// Create new quiz (Admin and Team Leader)
 const createQuiz = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -87,11 +106,14 @@ const createQuiz = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, questions, timeLimit } = req.body;
+    const { title, description, questions, timeLimit, targetTeam } = req.body;
+
+    const resolvedTargetTeam = req.user.role === 'team_leader' ? req.user.team : (targetTeam || null);
 
     const quiz = await Quiz.create({
       title,
       description,
+      targetTeam: resolvedTargetTeam,
       questions,
       timeLimit: timeLimit || 30,
       createdBy: req.user.id
@@ -107,7 +129,7 @@ const createQuiz = async (req, res) => {
   }
 };
 
-// Update quiz (Admin only)
+// Update quiz (Admin and Team Leader with ownership)
 const updateQuiz = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -115,7 +137,7 @@ const updateQuiz = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, questions, timeLimit, isActive } = req.body;
+    const { title, description, questions, timeLimit, isActive, targetTeam } = req.body;
     const quizId = req.params.id;
 
     const quiz = await Quiz.findById(quizId);
@@ -123,11 +145,17 @@ const updateQuiz = async (req, res) => {
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
+    if (req.user.role === 'team_leader' && quiz.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You can only update quizzes you created.' });
+    }
+
     if (title) quiz.title = title;
     if (description !== undefined) quiz.description = description;
     if (questions) quiz.questions = questions;
     if (timeLimit) quiz.timeLimit = timeLimit;
     if (isActive !== undefined) quiz.isActive = isActive;
+    if (req.user.role === 'admin' && targetTeam !== undefined) quiz.targetTeam = targetTeam;
+    if (req.user.role === 'team_leader') quiz.targetTeam = req.user.team;
 
     await quiz.save();
 
@@ -141,12 +169,16 @@ const updateQuiz = async (req, res) => {
   }
 };
 
-// Delete quiz (Admin only)
+// Delete quiz (Admin and Team Leader with ownership)
 const deleteQuiz = async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    if (req.user.role === 'team_leader' && quiz.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You can only delete quizzes you created.' });
     }
 
     await quiz.deleteOne();
@@ -176,6 +208,10 @@ const submitQuiz = async (req, res) => {
 
     if (!quiz.isActive) {
       return res.status(400).json({ message: 'Quiz is not active' });
+    }
+
+    if (!canAccessQuizByTeam(quiz, req.user)) {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     // Check if user has already attempted
@@ -282,7 +318,8 @@ const getUserQuizResults = async (req, res) => {
 // Get all quiz results (Admin only)
 const getAllQuizResults = async (req, res) => {
   try {
-    const quizzes = await Quiz.find()
+    const query = req.user.role === 'team_leader' ? { targetTeam: req.user.team } : {};
+    const quizzes = await Quiz.find(query)
       .populate('createdBy', 'name email')
       .populate('results.userId', 'name email team');
 

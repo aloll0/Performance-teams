@@ -63,6 +63,10 @@ const quizSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  targetTeam: {
+    type: String,
+    default: null
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

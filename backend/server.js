@@ -9,6 +9,7 @@ const teamRoutes = require('./routes/teamRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const workLogRoutes = require('./routes/workLogRoutes');
 const { seedDemoData } = require('./utils/seedDemoData');
 
 dotenv.config();
@@ -29,6 +30,7 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/work-logs', workLogRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });

@@ -11,6 +11,7 @@ export const getQuizById = (id: string) => {
 export const createQuiz = (data: {
   title: string;
   description?: string;
+  targetTeam?: string | null;
   questions: {
     question: string;
     options: string[];
@@ -25,6 +26,7 @@ export const createQuiz = (data: {
 export const updateQuiz = (id: string, data: {
   title?: string;
   description?: string;
+  targetTeam?: string | null;
   questions?: {
     question: string;
     options: string[];
