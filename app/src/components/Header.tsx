@@ -1,5 +1,3 @@
-import { Bell, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/authStore';
 
 const Header = () => {

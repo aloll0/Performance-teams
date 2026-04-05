@@ -32,7 +32,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useAuthStore } from '@/store/authStore';
 import { getAllEvaluations, createOrUpdateEvaluation, getEmployeeStats } from '@/services/evaluationApi';
 import { getAllUsers } from '@/services/userApi';
 import type { Evaluation, User } from '@/types';
@@ -45,9 +44,6 @@ const getUserId = (value?: Partial<User> | null) => value?.id || (value as any)?
 
 const EvaluationsPage = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _userRole = user?.role;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isEvaluateDialogOpen, setIsEvaluateDialogOpen] = useState(false);

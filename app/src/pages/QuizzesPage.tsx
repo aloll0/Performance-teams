@@ -6,7 +6,6 @@ import {
   Clock, 
   CheckCircle,
   Play,
-  Edit2,
   Trash2,
   MoreHorizontal,
   Trophy
@@ -31,7 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/store/authStore';
-import { getAllQuizzes, createQuiz, updateQuiz, deleteQuiz } from '@/services/quizApi';
+import { getAllQuizzes, createQuiz, deleteQuiz } from '@/services/quizApi';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -43,10 +42,6 @@ const QuizzesPage = () => {
   const canManageQuizzes = user?.role === 'admin' || user?.role === 'team_leader';
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -75,20 +70,6 @@ const QuizzesPage = () => {
       toast.error(error.response?.data?.message || 'Failed to create quiz');
     }
   });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateQuiz(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quizzes'] });
-      toast.success('Quiz updated successfully');
-      setIsEditDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update quiz');
-    }
-  });
-  // Use updateMutation in openEditDialog to avoid unused variable error
-  const _useUpdateMutation = updateMutation;
 
   const deleteMutation = useMutation({
     mutationFn: deleteQuiz,
@@ -148,23 +129,6 @@ const QuizzesPage = () => {
     if (confirm('Are you sure you want to delete this quiz?')) {
       deleteMutation.mutate(id);
     }
-  };
-
-  const openEditDialog = (quiz: any) => {
-    setSelectedQuiz(quiz);
-    setFormData({
-      title: quiz.title,
-      description: quiz.description || '',
-      timeLimit: quiz.timeLimit,
-      targetTeam: quiz.targetTeam || '',
-      questions: quiz.questions.map((q: any) => ({
-        question: q.question,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        points: q.points || 1
-      }))
-    });
-    setIsEditDialogOpen(true);
   };
 
   const startQuiz = (quizId: string) => {
@@ -249,13 +213,6 @@ const QuizzesPage = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="bg-[#0D132C] border-white/10">
-                          <DropdownMenuItem 
-                            onClick={() => openEditDialog(quiz)}
-                            className="text-white hover:bg-white/10"
-                          >
-                            <Edit2 className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleDelete(quiz._id)}
                             className="text-red-400 hover:bg-red-500/10"
