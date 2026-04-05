@@ -11,12 +11,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { getEmployeeStats } from '@/services/evaluationApi';
 import { getUserQuizResults } from '@/services/quizApi';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const isEmployee = user?.role === 'employee';
 
@@ -80,10 +83,14 @@ const ProfilePage = () => {
       <Card className="bg-white/5 border-white/10">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-[#F26B21]/20 flex items-center justify-center">
-              <span className="text-4xl font-bold text-[#F26B21]">
-                {user?.name?.charAt(0)}
-              </span>
+            <div className="w-24 h-24 rounded-full bg-[#F26B21]/20 flex items-center justify-center overflow-hidden">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-4xl font-bold text-[#F26B21]">
+                  {user?.name?.charAt(0)}
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
@@ -114,6 +121,28 @@ const ProfilePage = () => {
               <span className="text-white/50 text-sm">Level</span>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white">Account Security</CardTitle>
+          <CardDescription className="text-white/60">
+            Change your password from Settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <p className="text-white/70 text-sm max-w-2xl">
+            {isEmployee
+              ? 'You can update your password at any time from the Settings page.'
+              : 'Use Settings to manage password and account security options.'}
+          </p>
+          <Button
+            onClick={() => navigate('/settings')}
+            className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
+          >
+            Go to Settings
+          </Button>
         </CardContent>
       </Card>
 

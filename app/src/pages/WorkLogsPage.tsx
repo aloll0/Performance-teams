@@ -191,7 +191,7 @@ const WorkLogsPage = () => {
             ))}
 
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <Button type="button" variant="outline" onClick={addItem} className="border-white/20 text-white hover:bg-white/10">
+              <Button type="button" variant="outline" onClick={addItem} className="border-white/20 text-black dark:text-white hover:bg-white/10">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Task
               </Button>

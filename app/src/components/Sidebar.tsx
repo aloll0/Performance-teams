@@ -24,7 +24,7 @@ const Sidebar = () => {
     { path: '/quizzes', label: 'Quizzes', icon: BrainCircuit },
     { path: '/work-logs', label: 'Daily Work Log', icon: NotebookPen },
     { path: '/profile', label: 'Profile', icon: UserCircle },
-    ...(user?.role !== 'employee' ? [{ path: '/settings', label: 'Settings', icon: Settings }] : []),
+    { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -32,12 +32,13 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#F26B21] flex items-center justify-center">
-            <span className="text-white font-bold text-lg">EP</span>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+            {/* <span className="text-white font-bold text-lg">EP</span> */}
+            <img src="/logo.svg" alt="Logo" />
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg">Performance</h1>
-            <p className="text-white/50 text-xs">SaaS Dashboard</p>
+            <h1 className="text-white font-bold text-lg">Thimify</h1>
+            <p className="text-white/50 text-xs">Performance Management</p>
           </div>
         </div>
       </div>

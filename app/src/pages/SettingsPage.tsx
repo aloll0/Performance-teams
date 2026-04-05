@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { 
   Settings, 
   Lock, 
   Bell, 
-  Moon,
+  Camera,
+  Trash2,
   Shield,
   Save
 } from 'lucide-react';
@@ -15,14 +17,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { changePassword } from '@/services/authApi';
+import { deleteUser, removeMyAvatar, updateMyAvatar } from '@/services/userApi';
+import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
 const SettingsPage = () => {
+  const navigate = useNavigate();
+  const { user, logout, updateUser } = useAuthStore();
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -45,6 +52,93 @@ const SettingsPage = () => {
       toast.error(error.response?.data?.message || 'Failed to change password');
     }
   });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => {
+      if (!user?.id) {
+        throw new Error('User not found');
+      }
+
+      return deleteUser(user.id);
+    },
+    onSuccess: () => {
+      toast.success('Account deleted successfully');
+      logout();
+      navigate('/login', { replace: true });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete account');
+    }
+  });
+
+  const updateAvatarMutation = useMutation({
+    mutationFn: (avatar: string) => updateMyAvatar({ avatar }),
+    onSuccess: (response: any) => {
+      toast.success(response?.data?.message || 'Profile image updated successfully');
+      if (response?.data?.user) {
+        updateUser(response.data.user);
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update profile image');
+    }
+  });
+
+  const removeAvatarMutation = useMutation({
+    mutationFn: removeMyAvatar,
+    onSuccess: (response: any) => {
+      toast.success(response?.data?.message || 'Profile image removed successfully');
+      setAvatarUrl('');
+      if (response?.data?.user) {
+        updateUser(response.data.user);
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to remove profile image');
+    }
+  });
+
+  const handleDeleteAccount = () => {
+    if (!user?.id) return;
+
+    const confirmed = window.confirm('This will deactivate your account. Continue?');
+    if (!confirmed) return;
+
+    deleteAccountMutation.mutate();
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size must be less than 2 MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      setAvatarUrl(result);
+      updateAvatarMutation.mutate(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUrlSave = () => {
+    const value = avatarUrl.trim();
+    if (!value) {
+      toast.error('Please enter image URL first');
+      return;
+    }
+
+    updateAvatarMutation.mutate(value);
+  };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +228,97 @@ const SettingsPage = () => {
         </CardContent>
       </Card>
 
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Camera className="w-5 h-5 text-[#F26B21]" />
+            Profile Image
+          </CardTitle>
+          <CardDescription className="text-white/60">
+            Upload or remove your account picture
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-white/10 overflow-hidden flex items-center justify-center">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white/70 text-xl font-semibold">{user?.name?.charAt(0)}</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Input type="file" accept="image/*" onChange={handleAvatarFileChange} className="bg-white/5 border-white/10 text-white file:text-white" />
+              <p className="text-white/50 text-xs">Max 2 MB. PNG/JPG/WebP supported.</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="avatar-url" className="text-white">Or Image URL</Label>
+            <Input
+              id="avatar-url"
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              placeholder="https://example.com/avatar.png"
+              className="bg-white/5 border-white/10 text-white"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
+              onClick={handleAvatarUrlSave}
+              disabled={updateAvatarMutation.isPending}
+            >
+              {updateAvatarMutation.isPending ? 'Saving...' : 'Save Image'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-white/20 hover:bg-white/10"
+              onClick={() => removeAvatarMutation.mutate()}
+              disabled={removeAvatarMutation.isPending || !user?.avatar}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {removeAvatarMutation.isPending ? 'Removing...' : 'Remove Image'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {user?.role === 'admin' && (
+        <Card className="bg-white/5 border-red-500/20">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Shield className="w-5 h-5 text-red-400" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription className="text-white/60">
+              Deactivate the current admin account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="text-white font-medium">Delete My Account</p>
+                <p className="text-white/50 text-sm">
+                  This will deactivate your account and sign you out immediately.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="border-red-500/30 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountMutation.isPending}
+              >
+                {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Notifications */}
       <Card className="bg-white/5 border-white/10">
         <CardHeader>
@@ -172,71 +357,6 @@ const SettingsPage = () => {
               }
               className="data-[state=checked]:bg-[#F26B21]"
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Appearance */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Moon className="w-5 h-5 text-[#F26B21]" />
-            Appearance
-          </CardTitle>
-          <CardDescription className="text-white/60">
-            Customize the look and feel of the application
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-white">Dark Mode</Label>
-              <p className="text-white/50 text-sm">Use dark theme throughout the application</p>
-            </div>
-            <Switch
-              checked={preferences.darkMode}
-              onCheckedChange={(checked) => 
-                setPreferences({ ...preferences, darkMode: checked })
-              }
-              className="data-[state=checked]:bg-[#F26B21]"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Security */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Shield className="w-5 h-5 text-[#F26B21]" />
-            Security
-          </CardTitle>
-          <CardDescription className="text-white/60">
-            Security settings for your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium">Two-Factor Authentication</p>
-                <p className="text-white/50 text-sm">Add an extra layer of security to your account</p>
-              </div>
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                Enable
-              </Button>
-            </div>
-          </div>
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium">Session Management</p>
-                <p className="text-white/50 text-sm">Manage your active sessions</p>
-              </div>
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                View Sessions
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>

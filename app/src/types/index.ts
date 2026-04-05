@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
   role: 'admin' | 'team_leader' | 'employee';
   team?: string;
   level?: 'Fresh' | 'Implementor' | 'Maker' | 'Pro' | 'Mentor' | 'Pro / Mentor';
@@ -148,7 +149,7 @@ export interface DemoCredentials {
     name: string;
     team: string;
     email: string;
-    password: string;
+    password?: string;
   }[];
 }
 

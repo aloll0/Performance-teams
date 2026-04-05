@@ -37,13 +37,18 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
+    if (!normalizedEmail || !formData.password) {
       toast.error('Please enter both email and password');
       return;
     }
 
     try {
-      await login(formData);
+      await login({
+        email: normalizedEmail,
+        password: formData.password
+      });
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -55,6 +60,10 @@ const LoginPage = () => {
     setFormData({ email, password });
   };
 
+  const fillEmployeeEmailOnly = (email: string) => {
+    setFormData({ email, password: '' });
+  };
+
   return (
     <div className="min-h-screen bg-[#0D132C] flex items-center justify-center p-4">
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -62,11 +71,12 @@ const LoginPage = () => {
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-lg bg-[#F26B21] flex items-center justify-center">
-                <span className="text-white font-bold text-xl">EP</span>
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center">
+                {/* <span className="text-white font-bold text-xl">EP</span> */}
+                <img src="/logo.svg" alt="Logo" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-white">Welcome Back</CardTitle>
+                <CardTitle className="text-2xl text-white">Welcome Back Thimify</CardTitle>
                 <CardDescription className="text-white/60">
                   Sign in to your account
                 </CardDescription>
@@ -198,17 +208,20 @@ const LoginPage = () => {
               </TabsContent>
 
               <TabsContent value="employees" className="mt-4">
+                <p className="text-white/50 text-xs mb-3">
+                  Employee passwords are set when accounts are created. Enter the assigned password manually.
+                </p>
                 <div className="space-y-2 max-h-80 overflow-auto pr-2">
                   {demoCredentials?.employees?.map((employee, index) => (
                     <button
                       key={`${employee.email}-${index}`}
-                      onClick={() => fillCredentials(employee.email, employee.password)}
+                      onClick={() => fillEmployeeEmailOnly(employee.email)}
                       className="w-full p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#F26B21]/50 transition-all text-left"
                     >
                       <p className="text-white font-medium">{employee.name}</p>
                       <p className="text-white/50 text-sm">{employee.team}</p>
                       <p className="text-white/50 text-sm">{employee.email}</p>
-                      <p className="text-white/30 text-xs">Password: {employee.password}</p>
+                      <p className="text-white/30 text-xs">Password: use the one assigned by team leader</p>
                     </button>
                   ))}
                 </div>

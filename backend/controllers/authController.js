@@ -13,9 +13,10 @@ const login = async (req, res) => {
     }
 
     const { email, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -40,6 +41,7 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
         role: user.role,
         team: user.team,
         level: user.level
@@ -63,6 +65,7 @@ const getCurrentUser = async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar,
       role: user.role,
       team: user.team,
       level: user.level,
@@ -121,19 +124,22 @@ const getDemoCredentials = async (req, res) => {
         password: '123456'
       },
       teamLeaders: [
+        { team: 'Research', email: 'research@thimify.com', password: 'Research@123' },
         { team: 'Debuger', email: 'debuger@thimify.com', password: 'Debuger@123' },
         { team: 'Shopify', email: 'shopify@thimify.com', password: 'Shopify@123' },
         { team: 'Zed', email: 'zed@thimify.com', password: 'Zed@123' },
         { team: 'Salla', email: 'salla@thimify.com', password: 'Salla@123' },
         { team: 'Wordpress', email: 'wordpress@thimify.com', password: 'Wordpress@123' },
         { team: 'Taster', email: 'taster@thimify.com', password: 'Taster@123' },
-        { team: 'UIUX', email: 'uiux@thimify.com', password: 'Uiux@123' }
+        { team: 'UIUX', email: 'uiux@thimify.com', password: 'Uiux@123' },
+        { team: 'Graphic', email: 'graphic@thimify.com', password: 'Graphic@123' },
+        { team: 'Content', email: 'content@thimify.com', password: 'Content@123' },
+        { team: 'Bussiness', email: 'business@thimify.com', password: 'Business@123' }
       ],
       employees: employees.map((employee) => ({
         name: employee.name,
         team: employee.team,
-        email: employee.email,
-        password: toAccountName(employee.name)
+        email: employee.email
       }))
     };
 

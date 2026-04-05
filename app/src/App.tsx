@@ -46,7 +46,7 @@ function App() {
               <Route path="/quizzes/:id" element={<QuizDetailPage />} />
               <Route path="/work-logs" element={<WorkLogsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={user?.role === 'employee' ? <Navigate to="/dashboard" replace /> : <SettingsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
           <Route path="/" element={<Navigate to="/dashboard" />} />

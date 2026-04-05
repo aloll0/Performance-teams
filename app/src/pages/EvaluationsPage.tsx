@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const CRITERIA = ['Code Quality', 'Performance', 'Communication', 'Problem Solving', 'Teamwork', 'Punctuality'];
+const getUserId = (value?: Partial<User> | null) => value?.id || (value as any)?._id || '';
 
 const EvaluationsPage = () => {
   const queryClient = useQueryClient();
@@ -77,10 +78,12 @@ const EvaluationsPage = () => {
   });
 
   const { data: employeeStats } = useQuery({
-    queryKey: ['employeeStats', selectedEmployeeData?.id],
+    queryKey: ['employeeStats', getUserId(selectedEmployeeData)],
     queryFn: async () => {
       if (!selectedEmployeeData) return null;
-      const response = await getEmployeeStats(selectedEmployeeData.id);
+      const employeeId = getUserId(selectedEmployeeData);
+      if (!employeeId) return null;
+      const response = await getEmployeeStats(employeeId);
       return response.data;
     },
     enabled: !!selectedEmployeeData
@@ -129,7 +132,7 @@ const EvaluationsPage = () => {
     if (employee) {
       setEvaluationData({
         ...evaluationData,
-        employeeId: employee.id
+        employeeId: getUserId(employee)
       });
     }
     setIsEvaluateDialogOpen(true);
@@ -274,19 +277,19 @@ const EvaluationsPage = () => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
+                    className="flex-1 border-white/20  hover:bg-white/10"
                     onClick={() => openEvaluateDialog(employee)}
                   >
-                    <ClipboardCheck className="w-4 h-4 mr-2" />
+                    <ClipboardCheck className="w-4 h-4 mr-2 text-black" />
                     Evaluate
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
+                    className="flex-1 border-white/20  hover:bg-white/10"
                     onClick={() => openHistoryDialog(employee)}
                   >
-                    <History className="w-4 h-4 mr-2" />
+                    <History className="w-4 h-4 mr-2 text-black" />
                     History
                   </Button>
                 </div>
@@ -318,7 +321,7 @@ const EvaluationsPage = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-[#0D132C] border-white/10">
                   {employees?.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id} className="text-white">
+                    <SelectItem key={getUserId(employee)} value={getUserId(employee)} className="text-white">
                       {employee.name} - {employee.team}
                     </SelectItem>
                   ))}
@@ -401,7 +404,7 @@ const EvaluationsPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsEvaluateDialogOpen(false)}
-                className="border-white/20 text-white hover:bg-white/10"
+                className="border-white/20 hover:bg-white/10"
               >
                 Cancel
               </Button>

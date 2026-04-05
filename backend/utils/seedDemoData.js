@@ -4,13 +4,17 @@ const Quiz = require('../models/Quiz');
 const Evaluation = require('../models/Evaluation');
 
 const teamDefinitions = [
+  { name: 'Research', description: 'Research and development team' },
   { name: 'Debuger', description: 'Debugging and issue resolution team' },
   { name: 'Shopify', description: 'Shopify implementation team' },
   { name: 'Zed', description: 'Operations and support team' },
   { name: 'Salla', description: 'Commerce growth team' },
   { name: 'Wordpress', description: 'WordPress delivery team' },
   { name: 'Taster', description: 'Quality and experimentation team' },
-  { name: 'UIUX', description: 'Design and user experience team' }
+  { name: 'UIUX', description: 'Design and user experience team' },
+  { name: 'Graphic', description: 'Graphic design and branding team' },
+  { name: 'Content', description: 'Content creation and strategy team' },
+  { name: 'Bussiness', description: 'Business development and strategy team' }
 ];
 
 const adminCredentials = {
@@ -20,17 +24,20 @@ const adminCredentials = {
 };
 
 const leaderCredentials = [
+  { team: 'Research', email: 'research@thimify.com', password: 'Research@123', name: 'Research Lead' },
   { team: 'Debuger', email: 'debuger@thimify.com', password: 'Debuger@123', name: 'Debuger Lead' },
   { team: 'Shopify', email: 'shopify@thimify.com', password: 'Shopify@123', name: 'Shopify Lead' },
   { team: 'Zed', email: 'zed@thimify.com', password: 'Zed@123', name: 'Zed Lead' },
   { team: 'Salla', email: 'salla@thimify.com', password: 'Salla@123', name: 'Salla Lead' },
   { team: 'Wordpress', email: 'wordpress@thimify.com', password: 'Wordpress@123', name: 'Wordpress Lead' },
   { team: 'Taster', email: 'taster@thimify.com', password: 'Taster@123', name: 'Taster Lead' },
-  { team: 'UIUX', email: 'uiux@thimify.com', password: 'Uiux@123', name: 'UIUX Lead' }
+  { team: 'UIUX', email: 'uiux@thimify.com', password: 'Uiux@123', name: 'UIUX Lead' },
+  { team: 'Graphic', email: 'graphic@thimify.com', password: 'Graphic@123', name: 'Graphic Lead' },
+  { team: 'Content', email: 'content@thimify.com', password: 'Content@123', name: 'Content Lead' },
+  { team: 'Bussiness', email: 'business@thimify.com', password: 'Business@123', name: 'Bussiness Lead' }
 ];
 
 const employeeBlueprints = [
-  { id: 'e1', name: 'Ali Waleed', team: 'Debuger', level: 'Pro / Mentor' },
   { id: 'e2', name: 'Ali Alaa', team: 'Debuger', level: 'Implementor' },
   { id: 'e3', name: 'Yahia', team: 'Debuger', level: 'Implementor' },
   { id: 'e4', name: 'Ziad', team: 'Debuger', level: 'Implementor' },
@@ -55,7 +62,11 @@ const employeeBlueprints = [
   { id: 'e23', name: 'Kareem', team: 'UIUX', level: 'Implementor' },
   { id: 'e24', name: 'Hannony', team: 'Wordpress', level: 'Implementor' },
   { id: 'e25', name: 'Foud', team: 'Wordpress', level: 'Maker' },
-  { id: 'e26', name: 'Osama', team: 'Wordpress', level: 'Implementor' }
+  { id: 'e26', name: 'Osama', team: 'Wordpress', level: 'Implementor' },
+  { id: 'e27', name: 'Manar', team: 'Bussiness', level: 'Implementor' },
+  { id: 'e28', name: 'Shrouk', team: 'Graphic', level: 'Implementor' },
+  { id: 'e29', name: 'Kareem', team: 'Content', level: 'Implementor' },
+  { id: 'e30', name: 'Asmaa', team: 'Content', level: 'Implementor' }
 ];
 
 const quizSeed = [

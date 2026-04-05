@@ -196,7 +196,7 @@ const TeamsPage = () => {
                   <DropdownMenuContent className="bg-[#0D132C] border-white/10">
                     <DropdownMenuItem 
                       onClick={() => openEditDialog(team)}
-                      className="text-white hover:bg-white/10"
+                      className="text-white"
                     >
                       <Edit2 className="w-4 h-4 mr-2" />
                       Edit
@@ -294,7 +294,7 @@ const TeamsPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsAddDialogOpen(false)}
-                className="border-white/20 text-white hover:bg-white/10"
+                className="border-white/20 "
               >
                 Cancel
               </Button>
@@ -362,7 +362,7 @@ const TeamsPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsEditDialogOpen(false)}
-                className="border-white/20 text-white hover:bg-white/10"
+                className="border-white/20  "
               >
                 Cancel
               </Button>
