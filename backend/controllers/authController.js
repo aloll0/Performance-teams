@@ -114,6 +114,10 @@ const changePassword = async (req, res) => {
 // Get demo credentials
 const getDemoCredentials = async (req, res) => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ message: 'Not found' });
+    }
+
     const employees = await User.find({ role: 'employee', isActive: true })
       .select('name team email')
       .sort({ team: 1, name: 1 });

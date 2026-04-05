@@ -1,17 +1,28 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (secret && secret.trim()) return secret;
+
+  if (isProduction) {
+    throw new Error('JWT_SECRET is required in production');
+  }
+
+  return 'dev-only-jwt-secret-change-before-production';
+};
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign({ userId }, getJwtSecret(), { expiresIn: '24h' });
 };
 
 // Verify JWT token
 const verifyToken = (token) => {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, getJwtSecret());
   } catch (error) {
     return null;
   }
@@ -95,5 +106,5 @@ module.exports = {
   authenticate,
   authorize,
   canAccessTeam,
-  JWT_SECRET
+  JWT_SECRET: process.env.JWT_SECRET
 };
