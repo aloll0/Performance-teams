@@ -1,0 +1,6 @@
+
+> employee-performance-backend@1.0.0 dev
+> node server.js
+
+◇ injecting env (4) from .env // tip: ⌘ suppress logs { quiet: true }
+API server listening on 0.0.0.0:5001

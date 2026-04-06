@@ -131,7 +131,7 @@ const getDemoCredentials = async (req, res) => {
         { team: 'Research', email: 'research@thimify.com', password: 'Research@123' },
         { team: 'Debuger', email: 'debuger@thimify.com', password: 'Debuger@123' },
         { team: 'Shopify', email: 'shopify@thimify.com', password: 'Shopify@123' },
-        { team: 'Zed', email: 'zed@thimify.com', password: 'Zed@123' },
+        { team: 'Zid', email: 'zid@thimify.com', password: 'Zid@123' },
         { team: 'Salla', email: 'salla@thimify.com', password: 'Salla@123' },
         { team: 'Wordpress', email: 'wordpress@thimify.com', password: 'Wordpress@123' },
         { team: 'Taster', email: 'taster@thimify.com', password: 'Taster@123' },

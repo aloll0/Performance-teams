@@ -13,6 +13,9 @@ const quizRoutes = require('./routes/quizRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const workLogRoutes = require('./routes/workLogRoutes');
 const { seedDemoData } = require('./utils/seedDemoData');
+const User = require('./models/User');
+const Team = require('./models/Team');
+const { normalizeTeamName } = require('./utils/normalizeTeamName');
 
 dotenv.config();
 
@@ -92,6 +95,28 @@ async function startServer() {
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/employee-performance';
     await mongoose.connect(mongoUri);
+
+    const zidTeamExists = await Team.findOne({ name: 'Zid' });
+    const legacyTeams = await Team.find({ name: 'Zed' });
+    for (const team of legacyTeams) {
+      if (zidTeamExists) {
+        await team.deleteOne();
+      } else {
+        team.name = 'Zid';
+        team.updatedAt = new Date();
+        await team.save();
+      }
+    }
+
+    const legacyUsers = await User.find({ $or: [{ team: 'Zed' }, { email: /@zed\./i }] });
+    for (const user of legacyUsers) {
+      user.team = 'Zid';
+      if (user.email && user.email.includes('@zed.')) {
+        user.email = user.email.replace(/@zed\./gi, `@${normalizeTeamName('Zed').toLowerCase()}.`);
+      }
+      user.updatedAt = new Date();
+      await user.save();
+    }
 
     if (process.env.ENABLE_DEMO_SEED === 'true' && !isProduction) {
       await seedDemoData();

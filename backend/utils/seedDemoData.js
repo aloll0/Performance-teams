@@ -2,12 +2,13 @@ const User = require('../models/User');
 const Team = require('../models/Team');
 const Quiz = require('../models/Quiz');
 const Evaluation = require('../models/Evaluation');
+const { normalizeTeamName } = require('./normalizeTeamName');
 
 const teamDefinitions = [
   { name: 'Research', description: 'Research and development team' },
   { name: 'Debuger', description: 'Debugging and issue resolution team' },
   { name: 'Shopify', description: 'Shopify implementation team' },
-  { name: 'Zed', description: 'Operations and support team' },
+  { name: 'Zid', description: 'Operations and support team' },
   { name: 'Salla', description: 'Commerce growth team' },
   { name: 'Wordpress', description: 'WordPress delivery team' },
   { name: 'Taster', description: 'Quality and experimentation team' },
@@ -27,7 +28,7 @@ const leaderCredentials = [
   { team: 'Research', email: 'research@thimify.com', password: 'Research@123', name: 'Research Lead' },
   { team: 'Debuger', email: 'debuger@thimify.com', password: 'Debuger@123', name: 'Debuger Lead' },
   { team: 'Shopify', email: 'shopify@thimify.com', password: 'Shopify@123', name: 'Shopify Lead' },
-  { team: 'Zed', email: 'zed@thimify.com', password: 'Zed@123', name: 'Zed Lead' },
+  { team: 'Zid', email: 'zid@thimify.com', password: 'Zid@123', name: 'Zid Lead' },
   { team: 'Salla', email: 'salla@thimify.com', password: 'Salla@123', name: 'Salla Lead' },
   { team: 'Wordpress', email: 'wordpress@thimify.com', password: 'Wordpress@123', name: 'Wordpress Lead' },
   { team: 'Taster', email: 'taster@thimify.com', password: 'Taster@123', name: 'Taster Lead' },
@@ -46,9 +47,9 @@ const employeeBlueprints = [
   { id: 'e7', name: 'Ahmed Wael', team: 'Salla', level: 'Implementor' },
   { id: 'e8', name: 'Yousf', team: 'Salla', level: 'Implementor' },
   { id: 'e9', name: 'Ziad Ali', team: 'Salla', level: 'Implementor' },
-  { id: 'e10', name: 'Mansour', team: 'Zed', level: 'Maker' },
-  { id: 'e11', name: 'Essam', team: 'Zed', level: 'Implementor' },
-  { id: 'e12', name: 'Embaby', team: 'Zed', level: 'Implementor' },
+  { id: 'e10', name: 'Mansour', team: 'Zid', level: 'Maker' },
+  { id: 'e11', name: 'Essam', team: 'Zid', level: 'Implementor' },
+  { id: 'e12', name: 'Embaby', team: 'Zid', level: 'Implementor' },
   { id: 'e13', name: 'Mostafa', team: 'Shopify', level: 'Implementor' },
   { id: 'e14', name: 'Rady', team: 'Shopify', level: 'Implementor' },
   { id: 'e15', name: 'Karma', team: 'Shopify', level: 'Implementor' },
@@ -114,7 +115,7 @@ function toAccountName(name) {
 
 function buildEmployeeCredentials(employee) {
   const accountName = toAccountName(employee.name);
-  const teamDomain = String(employee.team || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const teamDomain = String(normalizeTeamName(employee.team) || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   return {
     email: `${accountName}@${teamDomain}.com`,
     password: accountName
@@ -176,7 +177,7 @@ async function seedDemoData() {
         email,
         password: credentials.password,
         role: 'employee',
-        team: employee.team,
+        team: normalizeTeamName(employee.team),
         level: employee.level
       });
     } else {
@@ -184,7 +185,7 @@ async function seedDemoData() {
       user.email = email;
       user.password = credentials.password;
       user.role = 'employee';
-      user.team = employee.team;
+      user.team = normalizeTeamName(employee.team);
       user.level = employee.level;
       await user.save();
     }
