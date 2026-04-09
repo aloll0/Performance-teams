@@ -76,7 +76,7 @@ const LoginPage = () => {
                 <img src="/logo.svg" alt="Logo" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-white">Welcome Back Thimify</CardTitle>
+                <CardTitle className="text-2xl text-white">Welcome Back themiify</CardTitle>
                 <CardDescription className="text-white/60">
                   Sign in to your account
                 </CardDescription>
