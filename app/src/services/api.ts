@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
-// Prefer same-origin requests by default so production does not depend on localhost.
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
