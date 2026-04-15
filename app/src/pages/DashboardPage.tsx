@@ -37,13 +37,15 @@ const DashboardPage = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
   const isEmployee = user?.role === 'employee';
+  const canViewAnalytics = isAdmin || user?.role === 'team_leader';
 
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['dashboardAnalytics'],
     queryFn: async () => {
       const response = await getDashboardAnalytics();
       return response.data as DashboardAnalytics;
-    }
+    },
+    enabled: canViewAnalytics
   });
 
   const { data: teamLeaderPerformance } = useQuery({

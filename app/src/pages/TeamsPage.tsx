@@ -35,11 +35,14 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuthStore } from '@/store/authStore';
 import { getAllTeams, createTeam, updateTeam, deleteTeam } from '@/services/teamApi';
 import { getTeamLeaders } from '@/services/userApi';
 import { toast } from 'sonner';
 
 const TeamsPage = () => {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
   const queryClient = useQueryClient();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -64,8 +67,17 @@ const TeamsPage = () => {
     queryFn: async () => {
       const response = await getTeamLeaders();
       return response.data;
-    }
+    },
+    enabled: isAdmin
   });
+
+  const getLeaderName = (leaderId: any) => {
+    if (!leaderId) return 'Unknown';
+    if (typeof leaderId === 'object') {
+      return leaderId?.name || 'Unknown';
+    }
+    return 'Unknown';
+  };
 
   const createMutation = useMutation({
     mutationFn: createTeam,
@@ -163,6 +175,7 @@ const TeamsPage = () => {
             resetForm();
             setIsAddDialogOpen(true);
           }}
+          disabled={!isAdmin}
           className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -189,7 +202,7 @@ const TeamsPage = () => {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
+                    <Button variant="ghost" size="sm" className="text-white/70 hover:text-white" disabled={!isAdmin}>
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -222,7 +235,7 @@ const TeamsPage = () => {
                 <div>
                   <p className="text-white/50 text-xs">Team Leader</p>
                   <p className="text-white font-medium">
-                    {typeof team.leaderId === 'object' ? team.leaderId.name : 'Unknown'}
+                    {getLeaderName(team.leaderId)}
                   </p>
                 </div>
               </div>
