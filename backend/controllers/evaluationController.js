@@ -169,6 +169,10 @@ const getEmployeeEvaluationHistory = async (req, res) => {
     const { employeeId } = req.params;
 
     // Check permissions
+    if (req.user.role === 'employee' && req.user.id !== employeeId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     if (req.user.role === 'team_leader') {
       const employee = await User.findById(employeeId);
       if (!employee || employee.team !== req.user.team) {
@@ -292,6 +296,10 @@ const getEmployeeStats = async (req, res) => {
     const { employeeId } = req.params;
 
     // Check permissions
+    if (req.user.role === 'employee' && req.user.id !== employeeId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     if (req.user.role === 'team_leader') {
       const employee = await User.findById(employeeId);
       if (!employee || employee.team !== req.user.team) {

@@ -175,6 +175,8 @@ const EvaluationsPage = () => {
            employee?.email?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const safeEvaluations = (filteredEvaluations || []).filter((evaluation) => Boolean(evaluation?.employeeId));
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -217,8 +219,11 @@ const EvaluationsPage = () => {
 
       {/* Evaluations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredEvaluations?.map((evaluation) => {
-          const employee = evaluation.employeeId as User;
+        {safeEvaluations.map((evaluation) => {
+          const employee = evaluation.employeeId as User | null;
+          const employeeName = employee?.name || 'Unknown employee';
+          const employeeTeam = employee?.team || 'Unknown team';
+          const employeeInitial = employeeName.charAt(0) || '?';
           return (
             <Card key={evaluation._id} className="bg-white/5 border-white/10 hover:border-[#F26B21]/50 transition-colors">
               <CardHeader className="pb-3">
@@ -226,12 +231,12 @@ const EvaluationsPage = () => {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#F26B21]/20 flex items-center justify-center">
                       <span className="text-[#F26B21] font-bold">
-                        {employee?.name?.charAt(0)}
+                        {employeeInitial}
                       </span>
                     </div>
                     <div>
-                      <CardTitle className="text-white text-base">{employee?.name}</CardTitle>
-                      <CardDescription className="text-white/50">{employee?.team}</CardDescription>
+                      <CardTitle className="text-white text-base">{employeeName}</CardTitle>
+                      <CardDescription className="text-white/50">{employeeTeam}</CardDescription>
                     </div>
                   </div>
                   <Badge className={getPerformanceBadge(evaluation.performanceLevel)}>
@@ -274,7 +279,8 @@ const EvaluationsPage = () => {
                     variant="outline" 
                     size="sm" 
                     className="flex-1 border-white/20  hover:bg-white/10"
-                    onClick={() => openEvaluateDialog(employee)}
+                    onClick={() => employee && openEvaluateDialog(employee)}
+                    disabled={!employee}
                   >
                     <ClipboardCheck className="w-4 h-4 mr-2 text-black" />
                     Evaluate
@@ -283,7 +289,8 @@ const EvaluationsPage = () => {
                     variant="outline" 
                     size="sm" 
                     className="flex-1 border-white/20  hover:bg-white/10"
-                    onClick={() => openHistoryDialog(employee)}
+                    onClick={() => employee && openHistoryDialog(employee)}
+                    disabled={!employee}
                   >
                     <History className="w-4 h-4 mr-2 text-black" />
                     History
@@ -422,7 +429,7 @@ const EvaluationsPage = () => {
           <DialogHeader>
             <DialogTitle>Evaluation History</DialogTitle>
             <DialogDescription className="text-white/60">
-              {selectedEmployeeData?.name} - Performance over time
+              {selectedEmployeeData?.name || 'Employee'} - Performance over time
             </DialogDescription>
           </DialogHeader>
           
