@@ -22,6 +22,8 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
+const shouldSeedInDevelopment = process.env.ENABLE_DEMO_SEED === 'true' && !isProduction;
+const shouldSeedInProduction = process.env.AUTO_SEED_ON_START === 'true' && isProduction;
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -47,6 +49,16 @@ function validateProductionConfig() {
 }
 
 validateProductionConfig();
+
+async function seedIfDatabaseIsEmpty() {
+  const employeeCount = await User.countDocuments({ role: 'employee', isActive: true });
+  if (employeeCount > 0) {
+    return false;
+  }
+
+  await seedDemoData();
+  return true;
+}
 
 app.disable('x-powered-by');
 app.use(helmet());
@@ -118,9 +130,13 @@ async function startServer() {
       await user.save();
     }
 
-    if (process.env.ENABLE_DEMO_SEED === 'true' && !isProduction) {
-      await seedDemoData();
-      console.log('Demo seed data applied');
+    if (shouldSeedInDevelopment || shouldSeedInProduction) {
+      const didSeed = await seedIfDatabaseIsEmpty();
+      if (didSeed) {
+        console.log('Demo seed data applied');
+      } else {
+        console.log('Seed skipped because database already has active employees');
+      }
     }
 
     app.listen(port, () => {
