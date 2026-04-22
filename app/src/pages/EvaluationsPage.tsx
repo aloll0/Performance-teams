@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { getAllEvaluations, createOrUpdateEvaluation, getEmployeeStats } from '@/services/evaluationApi';
 import { getAllUsers } from '@/services/userApi';
+import { useAuthStore } from '@/store/authStore';
 import type { Evaluation, User } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,9 @@ const getUserId = (value?: Partial<User> | null) => value?.id || (value as any)?
 
 const EvaluationsPage = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+  const evaluationTargetRole = isAdmin ? 'team_leader' : 'employee';
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isEvaluateDialogOpen, setIsEvaluateDialogOpen] = useState(false);
@@ -64,10 +68,10 @@ const EvaluationsPage = () => {
     }
   });
 
-  const { data: employees } = useQuery({
+  const { data: evaluatees } = useQuery({
     queryKey: ['employees-for-evaluation'],
     queryFn: async () => {
-      const params: any = { role: 'employee' };
+      const params: any = { role: evaluationTargetRole };
       const response = await getAllUsers(params);
       return response.data as User[];
     }
@@ -191,7 +195,9 @@ const EvaluationsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Evaluations</h1>
-          <p className="text-white/60">Manage employee performance evaluations</p>
+          <p className="text-white/60">
+            {isAdmin ? 'Manage team leader performance evaluations' : 'Manage employee performance evaluations'}
+          </p>
         </div>
         <Button 
           onClick={() => openEvaluateDialog()}
@@ -308,24 +314,26 @@ const EvaluationsPage = () => {
           <DialogHeader>
             <DialogTitle>Performance Evaluation</DialogTitle>
             <DialogDescription className="text-white/60">
-              Evaluate employee performance across multiple criteria
+              {isAdmin
+                ? 'Evaluate team leader performance across multiple criteria'
+                : 'Evaluate employee performance across multiple criteria'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEvaluateSubmit} className="space-y-6">
             {/* Employee Selection */}
             <div className="space-y-2">
-              <Label>Employee</Label>
+              <Label>{isAdmin ? 'Team Leader' : 'Employee'}</Label>
               <Select 
                 value={evaluationData.employeeId} 
                 onValueChange={(value) => setEvaluationData({ ...evaluationData, employeeId: value })}
               >
                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select employee" />
+                  <SelectValue placeholder={isAdmin ? 'Select team leader' : 'Select employee'} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0D132C] border-white/10">
-                  {employees?.map((employee) => (
-                    <SelectItem key={getUserId(employee)} value={getUserId(employee)} className="text-white">
-                      {employee.name} - {employee.team}
+                  {evaluatees?.map((evaluatee) => (
+                    <SelectItem key={getUserId(evaluatee)} value={getUserId(evaluatee)} className="text-white">
+                      {evaluatee.name} - {evaluatee.team}
                     </SelectItem>
                   ))}
                 </SelectContent>

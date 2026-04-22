@@ -170,11 +170,20 @@ const EmployeesPage = () => {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedTeam = (isAdmin ? formData.team : (user?.team || formData.team)).trim();
+
+    if (isAdmin && !normalizedTeam) {
+      toast.error('Please select a team before creating the employee');
+      return;
+    }
+
     // For team leaders, automatically use their team
     const submitData = {
       ...formData,
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
       role: 'employee',
-      team: isAdmin ? formData.team : (user?.team || formData.team)
+      team: normalizedTeam
     };
     createMutation.mutate(submitData);
   };
@@ -555,7 +564,7 @@ const EmployeesPage = () => {
               <Button 
                 type="submit" 
                 className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
-                disabled={createMutation.isPending}
+                disabled={createMutation.isPending || (isAdmin && !formData.team.trim())}
               >
                 {createMutation.isPending ? 'Creating...' : 'Create Employee'}
               </Button>

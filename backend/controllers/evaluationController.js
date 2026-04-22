@@ -201,26 +201,26 @@ const createOrUpdateEvaluation = async (req, res) => {
 
     const { employeeId, month, year, criteria, notes } = req.body;
 
-    // Verify employee exists
-    const employee = await User.findById(employeeId);
-    if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
-    }
-
-    if (employee.role !== 'employee') {
-      return res.status(400).json({ message: 'Can only evaluate employees' });
+    // Verify evaluated user exists
+    const evaluatedUser = await User.findById(employeeId);
+    if (!evaluatedUser) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
     // Check permissions
     if (req.user.role === 'team_leader') {
-      if (employee.team !== req.user.team) {
+      if (evaluatedUser.role !== 'employee') {
+        return res.status(403).json({ message: 'Team leaders can only evaluate employees' });
+      }
+      if (evaluatedUser.team !== req.user.team) {
         return res.status(403).json({ message: 'Cannot evaluate employees from other teams' });
       }
     }
 
-    // Admin can only evaluate team leaders
-    if (req.user.role === 'admin' && employee.role !== 'team_leader') {
-      return res.status(403).json({ message: 'Admin can only evaluate team leaders' });
+    if (req.user.role === 'admin') {
+      if (evaluatedUser.role !== 'team_leader') {
+        return res.status(403).json({ message: 'Admin can only evaluate team leaders' });
+      }
     }
 
     // Get previous evaluation for comparison
