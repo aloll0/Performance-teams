@@ -9,8 +9,8 @@ export type CourseInput = {
   team?: string;
 };
 
-const PRIMARY_BASE = '/learning-courses';
-const FALLBACK_BASE = '/courses';
+const PRIMARY_BASE = '/courses';
+const FALLBACK_BASE = '/learning-courses';
 
 const withFallback = async <T>(requestFactory: (basePath: string) => Promise<T>): Promise<T> => {
   try {
