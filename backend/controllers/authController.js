@@ -118,6 +118,10 @@ const getDemoCredentials = async (req, res) => {
       return res.status(404).json({ message: 'Not found' });
     }
 
+    const teamLeaders = await User.find({ role: 'team_leader', isActive: true })
+      .select('team email')
+      .sort({ team: 1, email: 1 });
+
     const employees = await User.find({ role: 'employee', isActive: true })
       .select('name team email')
       .sort({ team: 1, name: 1 });
@@ -127,19 +131,11 @@ const getDemoCredentials = async (req, res) => {
         email: 'admin@demo.com',
         password: '123456'
       },
-      teamLeaders: [
-        { team: 'Research', email: 'research@thimify.com', password: 'Research@123' },
-        { team: 'Debuger', email: 'debuger@thimify.com', password: 'Debuger@123' },
-        { team: 'Shopify', email: 'shopify@thimify.com', password: 'Shopify@123' },
-        { team: 'Zid', email: 'zid@thimify.com', password: 'Zid@123' },
-        { team: 'Salla', email: 'salla@thimify.com', password: 'Salla@123' },
-        { team: 'Wordpress', email: 'wordpress@thimify.com', password: 'Wordpress@123' },
-        { team: 'Taster', email: 'taster@thimify.com', password: 'Taster@123' },
-        { team: 'UIUX', email: 'uiux@thimify.com', password: 'Uiux@123' },
-        { team: 'Graphic', email: 'graphic@thimify.com', password: 'Graphic@123' },
-        { team: 'Content', email: 'content@thimify.com', password: 'Content@123' },
-        { team: 'Bussiness', email: 'business@thimify.com', password: 'Business@123' }
-      ],
+      teamLeaders: teamLeaders.map((leader) => ({
+        team: leader.team,
+        email: leader.email,
+        passwordHint: 'Use the password assigned when this account was created'
+      })),
       employees: employees.map((employee) => ({
         name: employee.name,
         team: employee.team,

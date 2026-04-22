@@ -189,7 +189,13 @@ const LoginPage = () => {
                   {demoCredentials?.teamLeaders.map((leader, index) => (
                     <button
                       key={index}
-                      onClick={() => fillCredentials(leader.email, leader.password)}
+                      onClick={() => {
+                        if (leader.password) {
+                          fillCredentials(leader.email, leader.password);
+                        } else {
+                          fillEmployeeEmailOnly(leader.email);
+                        }
+                      }}
                       className="w-full p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#F26B21]/50 transition-all text-left group"
                     >
                       <div className="flex items-center justify-between">
@@ -198,7 +204,9 @@ const LoginPage = () => {
                             {leader.team} Team
                           </p>
                           <p className="text-white/50 text-sm">{leader.email}</p>
-                          <p className="text-white/30 text-xs">Password: {leader.password}</p>
+                          <p className="text-white/30 text-xs">
+                            Password: {leader.password || leader.passwordHint || 'use assigned password'}
+                          </p>
                         </div>
                         <Users className="w-6 h-6 text-white/30 group-hover:text-[#F26B21] transition-colors" />
                       </div>

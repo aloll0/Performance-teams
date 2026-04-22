@@ -2,9 +2,38 @@ const { validationResult } = require('express-validator');
 const Team = require('../models/Team');
 const User = require('../models/User');
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Get all teams
 const getAllTeams = async (req, res) => {
   try {
+    // Backfill missing teams for existing active team leaders.
+    const leadersWithTeams = await User.find({
+      role: 'team_leader',
+      isActive: true,
+      team: { $exists: true, $ne: '' }
+    }).select('_id team');
+
+    for (const leader of leadersWithTeams) {
+      const normalizedTeamName = String(leader.team || '').trim();
+      if (!normalizedTeamName) continue;
+
+      const existingTeam = await Team.findOne({
+        name: {
+          $regex: `^${escapeRegex(normalizedTeamName)}$`,
+          $options: 'i'
+        }
+      });
+
+      if (!existingTeam) {
+        await Team.create({
+          name: normalizedTeamName,
+          leaderId: leader._id,
+          description: ''
+        });
+      }
+    }
+
     let query = {};
 
     // Team leaders can only see their own team

@@ -15,6 +15,8 @@ const serializeUser = (user) => ({
   updatedAt: user.updatedAt
 });
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Get all users (Admin only)
 const getAllUsers = async (req, res) => {
   try {
@@ -97,10 +99,15 @@ const createUser = async (req, res) => {
         }
     
     const normalizedTeam = team ? String(team).trim() : undefined;
+    const normalizedRole = String(role || '').trim();
 
-    // Validate that employees have a team
-    if (role === 'employee' && !normalizedTeam) {
-      return res.status(400).json({ message: 'Team is required for employees' });
+    if (!['admin', 'team_leader', 'employee'].includes(normalizedRole)) {
+      return res.status(400).json({ message: 'Invalid role value' });
+    }
+
+    // Validate that non-admin users have a team
+    if (normalizedRole !== 'admin' && !normalizedTeam) {
+      return res.status(400).json({ message: 'Team is required for employees and team leaders' });
     }
 
     // Check if email already exists
@@ -108,7 +115,7 @@ const createUser = async (req, res) => {
     if (existingUser) {
       if (!existingUser.isActive && existingUser.role === 'employee') {
         if (req.user.role === 'team_leader') {
-          if (role !== 'employee') {
+          if (normalizedRole !== 'employee') {
             return res.status(403).json({ message: 'Team leaders can only create employees' });
           }
           if (normalizedTeam !== req.user.team) {
@@ -135,7 +142,7 @@ const createUser = async (req, res) => {
 
     // Team leaders can only create employees in their team
     if (req.user.role === 'team_leader') {
-      if (role !== 'employee') {
+      if (normalizedRole !== 'employee') {
         return res.status(403).json({ message: 'Team leaders can only create employees' });
       }
       if (normalizedTeam !== req.user.team) {
@@ -143,14 +150,36 @@ const createUser = async (req, res) => {
       }
     }
 
+    if (normalizedRole === 'team_leader') {
+      const existingTeam = await Team.findOne({
+        name: { $regex: `^${escapeRegex(normalizedTeam)}$`, $options: 'i' }
+      });
+      if (existingTeam) {
+        return res.status(400).json({ message: 'Team name already exists' });
+      }
+    }
+
     const user = await User.create({
       name: String(name || '').trim(),
       email: normalizedEmail,
       password,
-      role,
+      role: normalizedRole,
       team: normalizedTeam,
-      level: role === 'employee' ? level : undefined
+      level: normalizedRole === 'employee' ? level : undefined
     });
+
+    if (normalizedRole === 'team_leader') {
+      try {
+        await Team.create({
+          name: normalizedTeam,
+          leaderId: user._id,
+          description: ''
+        });
+      } catch (teamError) {
+        await user.deleteOne();
+        throw teamError;
+      }
+    }
 
     res.status(201).json({
       message: 'User created successfully',

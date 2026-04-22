@@ -64,6 +64,7 @@ const EmployeesPage = () => {
     name: '',
     email: '',
     password: '',
+    role: 'employee' as User['role'],
     team: '',
     level: 'Fresh'
   });
@@ -100,6 +101,8 @@ const EmployeesPage = () => {
     mutationFn: createUser,
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['employees'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['teamLeaders'] });
       toast.success(response?.data?.message || 'Employee created successfully');
       setIsAddDialogOpen(false);
       resetForm();
@@ -163,6 +166,7 @@ const EmployeesPage = () => {
       name: '',
       email: '',
       password: '',
+      role: 'employee',
       team: user?.team || '',
       level: 'Fresh'
     });
@@ -171,20 +175,36 @@ const EmployeesPage = () => {
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedTeam = (isAdmin ? formData.team : (user?.team || formData.team)).trim();
+    const selectedRole: User['role'] = isAdmin ? formData.role : 'employee';
 
-    if (isAdmin && !normalizedTeam) {
-      toast.error('Please select a team before creating the employee');
+    if (selectedRole !== 'admin' && !normalizedTeam) {
+      toast.error(
+        selectedRole === 'team_leader'
+          ? 'Please enter a new team name for this team leader'
+          : 'Please select a team before creating the account'
+      );
       return;
     }
 
-    // For team leaders, automatically use their team
-    const submitData = {
-      ...formData,
+    const submitData: {
+      name: string;
+      email: string;
+      password: string;
+      role: User['role'];
+      team?: string;
+      level?: string;
+    } = {
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
-      role: 'employee',
+      password: formData.password,
+      role: selectedRole,
       team: normalizedTeam
     };
+
+    if (selectedRole === 'employee') {
+      submitData.level = formData.level;
+    }
+
     createMutation.mutate(submitData);
   };
 
@@ -245,6 +265,7 @@ const EmployeesPage = () => {
       name: employee.name,
       email: employee.email,
       password: '',
+      role: employee.role,
       team: employee.team || '',
       level: employee.level || 'Fresh'
     });
@@ -316,7 +337,7 @@ const EmployeesPage = () => {
           className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Employee
+          Add Account
         </Button>
       </div>
 
@@ -472,13 +493,13 @@ const EmployeesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Add Employee Dialog */}
+      {/* Add Account Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="bg-[#0D132C] border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Add New Employee</DialogTitle>
+            <DialogTitle>Add New Account</DialogTitle>
             <DialogDescription className="text-white/60">
-              Create a new employee account
+              Create a new employee or team leader account
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddSubmit} className="space-y-4">
@@ -516,42 +537,80 @@ const EmployeesPage = () => {
             </div>
             {isAdmin && (
               <div className="space-y-2">
-                <Label htmlFor="team">Team</Label>
-                <Select 
-                  value={formData.team} 
-                  onValueChange={(value) => setFormData({ ...formData, team: value })}
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value: User['role']) =>
+                    setFormData({
+                      ...formData,
+                      role: value,
+                      team: value === 'team_leader' ? '' : formData.team
+                    })
+                  }
                 >
                   <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                    <SelectValue placeholder="Select team" />
+                    <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0D132C] border-white/10">
-                    {teams?.map((team: any) => (
-                      <SelectItem key={team._id} value={team.name} className="text-white">
-                        {team.name}
+                    <SelectItem value="employee" className="text-white">Employee</SelectItem>
+                    <SelectItem value="team_leader" className="text-white">Team Leader</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="team">
+                  {formData.role === 'team_leader' ? 'New Team Name' : 'Team'}
+                </Label>
+                {formData.role === 'team_leader' ? (
+                  <Input
+                    id="team"
+                    value={formData.team}
+                    onChange={(e) => setFormData({ ...formData, team: e.target.value })}
+                    className="bg-white/5 border-white/10 text-white"
+                    placeholder="e.g. Growth Squad"
+                    required
+                  />
+                ) : (
+                  <Select 
+                    value={formData.team} 
+                    onValueChange={(value) => setFormData({ ...formData, team: value })}
+                  >
+                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0D132C] border-white/10">
+                      {teams?.map((team: any) => (
+                        <SelectItem key={team._id} value={team.name} className="text-white">
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+            {(formData.role === 'employee' || !isAdmin) && (
+              <div className="space-y-2">
+                <Label htmlFor="level">Level</Label>
+                <Select 
+                  value={formData.level} 
+                  onValueChange={(value) => setFormData({ ...formData, level: value })}
+                >
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0D132C] border-white/10">
+                    {LEVELS.map((level) => (
+                      <SelectItem key={level} value={level} className="text-white">
+                        {level}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="level">Level</Label>
-              <Select 
-                value={formData.level} 
-                onValueChange={(value) => setFormData({ ...formData, level: value })}
-              >
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#0D132C] border-white/10">
-                  {LEVELS.map((level) => (
-                    <SelectItem key={level} value={level} className="text-white">
-                      {level}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <DialogFooter>
               <Button 
                 type="button" 
@@ -564,9 +623,9 @@ const EmployeesPage = () => {
               <Button 
                 type="submit" 
                 className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
-                disabled={createMutation.isPending || (isAdmin && !formData.team.trim())}
+                disabled={createMutation.isPending || !formData.team.trim()}
               >
-                {createMutation.isPending ? 'Creating...' : 'Create Employee'}
+                {createMutation.isPending ? 'Creating...' : 'Create Account'}
               </Button>
             </DialogFooter>
           </form>
