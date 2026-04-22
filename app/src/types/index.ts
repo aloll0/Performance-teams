@@ -143,7 +143,8 @@ export interface DemoCredentials {
   teamLeaders: {
     team: string;
     email: string;
-    password: string;
+    password?: string;
+    passwordHint?: string;
   }[];
   employees: {
     name: string;
@@ -170,4 +171,31 @@ export interface WorkLog {
   leaderComment?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface LearningCourse {
+  id: string;
+  title: string;
+  url: string;
+  platform?: string;
+  focusArea?: string;
+  notes?: string;
+  team: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  completionCount: number;
+  teamSize: number;
+  completionRate: number;
+  isCompletedByMe: boolean;
+  completions: {
+    userId: string;
+    userName?: string;
+    completedAt: string;
+  }[];
 }

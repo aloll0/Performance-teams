@@ -15,6 +15,7 @@ import TeamsPage from '@/pages/TeamsPage';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import './App.css';
+import CoursesPage from './pages/CoursesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,8 @@ function App() {
               <Route path="/quizzes" element={<QuizzesPage />} />
               <Route path="/quizzes/:id" element={<QuizDetailPage />} />
               <Route path="/work-logs" element={<WorkLogsPage />} />
+              <Route path="/courses" element={<CoursesPage />} />
+              <Route path="/CoursesPage" element={<CoursesPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

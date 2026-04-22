@@ -12,6 +12,7 @@ const evaluationRoutes = require('./routes/evaluationRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const workLogRoutes = require('./routes/workLogRoutes');
+const learningCourseRoutes = require('./routes/learningCourseRoutes');
 const { seedDemoData } = require('./utils/seedDemoData');
 const User = require('./models/User');
 const Team = require('./models/Team');
@@ -93,6 +94,8 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/work-logs', workLogRoutes);
+app.use('/api/learning-courses', learningCourseRoutes);
+app.use('/api/courses', learningCourseRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });

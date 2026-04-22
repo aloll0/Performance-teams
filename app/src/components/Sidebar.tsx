@@ -6,7 +6,8 @@ import {
   Building2, 
   BrainCircuit,
   NotebookPen,
-  UserCircle, 
+  UserCircle,
+  Album, 
   Settings,
   LogOut
 } from 'lucide-react';
@@ -29,6 +30,7 @@ const Sidebar = ({ isOpen, onToggle }: SidebarProps) => {
     ...(user?.role === 'admin' ? [{ path: '/teams', label: 'Teams', icon: Building2 }] : []),
     { path: '/quizzes', label: 'Quizzes', icon: BrainCircuit },
     { path: '/work-logs', label: 'Daily Work Log', icon: NotebookPen },
+    { path: '/courses', label: 'Courses', icon: Album },
     { path: '/profile', label: 'Profile', icon: UserCircle },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
