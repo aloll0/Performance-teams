@@ -3,7 +3,7 @@ import api from './api';
 export type CourseInput = {
   title: string;
   url: string;
-  platform?: string;
+  platform?: string;     
   focusArea?: string;
   notes?: string;
   team?: string;
