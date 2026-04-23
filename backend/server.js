@@ -24,7 +24,6 @@ const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 const shouldSeedInDevelopment = process.env.ENABLE_DEMO_SEED === 'true' && !isProduction;
-const shouldSeedInProduction = process.env.AUTO_SEED_ON_START === 'true' && isProduction;
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -96,8 +95,6 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/work-logs', workLogRoutes);
 app.use('/api/learning-courses', learningCourseRoutes);
 app.use('/api/courses', learningCourseRoutes);
-app.use('/learning-courses', learningCourseRoutes);
-app.use('/courses', learningCourseRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
@@ -135,7 +132,7 @@ async function startServer() {
       await user.save();
     }
 
-    if (shouldSeedInDevelopment || shouldSeedInProduction) {
+    if (shouldSeedInDevelopment) {
       const didSeed = await seedIfDatabaseIsEmpty();
       if (didSeed) {
         console.log('Demo seed data applied');

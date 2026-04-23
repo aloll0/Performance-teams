@@ -31,18 +31,6 @@ export const createLearningCourse = (data: CourseInput) => {
   return withFallback((basePath) => api.post(basePath, data));
 };
 
-
-// export const createLearningCourse = (data: CourseInput) => {
-//   return withFallback((basePath) =>
-//     api.post(basePath, data, {
-//       headers: {
-//         Authorization: `Bearer ${}`,
-//       },
-//     })
-//   );
-// };
-
-
 export const setLearningCourseCompletion = (id: string, completed: boolean) => {
   return withFallback((basePath) => api.put(`${basePath}/${id}/completion`, { completed }));
 };

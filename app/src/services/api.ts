@@ -5,14 +5,18 @@ const EXPLICIT_API_BASE_URL = String(import.meta.env.VITE_API_URL || '').trim();
 const LOCAL_API_BASE_URL = 'http://localhost:5001/api';
 
 const resolveApiBaseUrl = () => {
+  const isBrowser = typeof window !== 'undefined';
+  const isLocalhost = isBrowser && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  if (isLocalhost) return LOCAL_API_BASE_URL;
+
   if (EXPLICIT_API_BASE_URL) return EXPLICIT_API_BASE_URL;
 
   // In deployed environments, default to same-origin API route.
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1'
-  ) {
+  if (isBrowser) {
     return '/api';
   }
 
