@@ -580,7 +580,6 @@
 
 // export default CoursesPage;
 
-import React from 'react'
 
 const CoursesPage = () => {
   return (
