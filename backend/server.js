@@ -13,7 +13,6 @@ const quizRoutes = require('./routes/quizRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const workLogRoutes = require('./routes/workLogRoutes');
 const learningCourseRoutes = require('./routes/learningCourseRoutes');
-const { seedDemoData } = require('./utils/seedDemoData');
 const User = require('./models/User');
 const Team = require('./models/Team');
 const { normalizeTeamName } = require('./utils/normalizeTeamName');
@@ -23,8 +22,6 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
-const shouldSeedInDevelopment = process.env.ENABLE_DEMO_SEED === 'true' && !isProduction;
-const shouldSeedInProduction = process.env.AUTO_SEED_ON_START === 'true' && isProduction;
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -50,16 +47,6 @@ function validateProductionConfig() {
 }
 
 validateProductionConfig();
-
-async function seedIfDatabaseIsEmpty() {
-  const employeeCount = await User.countDocuments({ role: 'employee', isActive: true });
-  if (employeeCount > 0) {
-    return false;
-  }
-
-  await seedDemoData();
-  return true;
-}
 
 app.disable('x-powered-by');
 app.use(helmet());
@@ -133,15 +120,6 @@ async function startServer() {
       }
       user.updatedAt = new Date();
       await user.save();
-    }
-
-    if (shouldSeedInDevelopment || shouldSeedInProduction) {
-      const didSeed = await seedIfDatabaseIsEmpty();
-      if (didSeed) {
-        console.log('Demo seed data applied');
-      } else {
-        console.log('Seed skipped because database already has active employees');
-      }
     }
 
     app.listen(port, () => {

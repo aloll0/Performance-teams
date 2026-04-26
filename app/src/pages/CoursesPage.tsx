@@ -6,11 +6,12 @@ import {
   CheckCircle2,
   Circle,     
   ExternalLink,
-  Link2,
   Plus,
   Sparkles,
   Trash2,
-  UserCheck
+  UserCheck,
+  Video,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
-import { createLearningCourse, deleteLearningCourse, getLearningCourses, setLearningCourseCompletion } from '@/services/learningCourseApi';
+import {
+  addLearningCourseVideo,
+  createLearningCourse,
+  deleteLearningCourse,
+  getLearningCourses,
+  removeLearningCourseVideo,
+  setLearningCourseCompletion
+} from '@/services/learningCourseApi';
 import { getAllTeams } from '@/services/teamApi';
 import type { LearningCourse } from '@/types';
 import { toast } from 'sonner';
@@ -34,6 +42,7 @@ const CoursesPage = () => {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [focusFilter, setFocusFilter] = useState('all');
+  const [videoFormByCourse, setVideoFormByCourse] = useState<Record<string, { title: string; url: string }>>({});
   const [formData, setFormData] = useState({
     title: '',
     url: '',
@@ -102,6 +111,34 @@ const CoursesPage = () => {
     }
   });
 
+  const addVideoMutation = useMutation({
+    mutationFn: ({ id, title, url }: { id: string; title: string; url: string }) =>
+      addLearningCourseVideo(id, { title, url }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['learning-courses'] });
+      setVideoFormByCourse((prev) => ({
+        ...prev,
+        [variables.id]: { title: '', url: '' }
+      }));
+      toast.success('Video added');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to add video');
+    }
+  });
+
+  const removeVideoMutation = useMutation({
+    mutationFn: ({ id, videoId }: { id: string; videoId: string }) =>
+      removeLearningCourseVideo(id, videoId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['learning-courses'] });
+      toast.success('Video removed');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to remove video');
+    }
+  });
+
   const focusAreas = useMemo(() => {
     const all = (courses || [])
       .map((course) => course.focusArea?.trim())
@@ -116,6 +153,33 @@ const CoursesPage = () => {
   }, [courses, focusFilter]);
 
   const completedCount = filteredCourses.filter((course) => course.isCompletedByMe).length;
+
+  const getCourseVideos = (course: LearningCourse) => {
+    if (course.videos?.length) {
+      return course.videos;
+    }
+
+    if (course.url) {
+      return [{ id: `${course.id}-legacy`, title: course.title, url: course.url }];
+    }
+
+    return [];
+  };
+
+  const handleAddVideo = (courseId: string) => {
+    const formState = videoFormByCourse[courseId] || { title: '', url: '' };
+    const normalizedUrl = formState.url.trim();
+    if (!normalizedUrl) {
+      toast.error('Video URL is required');
+      return;
+    }
+
+    addVideoMutation.mutate({
+      id: courseId,
+      title: formState.title.trim(),
+      url: normalizedUrl
+    });
+  };
 
   const handleCreateCourse = (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,16 +316,84 @@ const CoursesPage = () => {
             <CardContent className="space-y-4">
               {course.notes && <p className="text-sm text-white/70">{course.notes}</p>}
 
-              <a
-                href={course.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-[#F9A56D] hover:text-[#F26B21] transition-colors"
-              >
-                <Link2 className="w-4 h-4" />
-                Open learning link
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-wide text-white/50">Course Videos</p>
+                <div className="space-y-2">
+                  {getCourseVideos(course).map((video) => (
+                    <div
+                      key={video.id}
+                      className="flex items-center justify-between gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2"
+                    >
+                      <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="min-w-0 flex items-center gap-2 text-[#F9A56D] hover:text-[#F26B21] transition-colors"
+                      >
+                        <Video className="w-4 h-4" />
+                        <span className="truncate">{video.title?.trim() || 'Open video'}</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+
+                      {canManageCourses && (user?.role === 'admin' || user?.team === course.team) && course.videos?.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-red-300 hover:bg-red-500/10"
+                          onClick={() => removeVideoMutation.mutate({ id: course.id, videoId: video.id })}
+                          disabled={removeVideoMutation.isPending}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {canManageCourses && (user?.role === 'admin' || user?.team === course.team) && (
+                  <div className="rounded-md border border-white/10 bg-white/[0.03] p-3 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <Input
+                        placeholder="Video title"
+                        value={videoFormByCourse[course.id]?.title || ''}
+                        onChange={(e) =>
+                          setVideoFormByCourse((prev) => ({
+                            ...prev,
+                            [course.id]: {
+                              title: e.target.value,
+                              url: prev[course.id]?.url || ''
+                            }
+                          }))
+                        }
+                        className="sm:col-span-1 bg-white/5 border-white/10 text-white"
+                      />
+                      <Input
+                        placeholder="https://video-link"
+                        value={videoFormByCourse[course.id]?.url || ''}
+                        onChange={(e) =>
+                          setVideoFormByCourse((prev) => ({
+                            ...prev,
+                            [course.id]: {
+                              title: prev[course.id]?.title || '',
+                              url: e.target.value
+                            }
+                          }))
+                        }
+                        className="sm:col-span-2 bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-[#F26B21] hover:bg-[#d95e19] text-white"
+                      onClick={() => handleAddVideo(course.id)}
+                      disabled={addVideoMutation.isPending}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Video
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               <div className="rounded-lg bg-white/5 border border-white/10 p-3">
                 <div className="flex items-center justify-between text-sm mb-2">

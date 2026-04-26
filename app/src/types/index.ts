@@ -16,6 +16,11 @@ export interface Team {
   leaderId: string | User;
   description?: string;
   employeeCount?: number;
+  evaluationMetrics?: {
+    _id?: string;
+    name: string;
+    isActive: boolean;
+  }[];
   createdAt?: string;
 }
 
@@ -135,25 +140,6 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface DemoCredentials {
-  admin: {
-    email: string;
-    password: string;
-  };
-  teamLeaders: {
-    team: string;
-    email: string;
-    password?: string;
-    passwordHint?: string;
-  }[];
-  employees: {
-    name: string;
-    team: string;
-    email: string;
-    password?: string;
-  }[];
-}
-
 export interface WorkLogItem {
   task: string;
   hours: number;
@@ -177,6 +163,12 @@ export interface LearningCourse {
   id: string;
   title: string;
   url: string;
+  videos: {
+    id: string;
+    title?: string;
+    url: string;
+    addedAt?: string;
+  }[];
   platform?: string;
   focusArea?: string;
   notes?: string;

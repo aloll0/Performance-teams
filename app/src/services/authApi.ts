@@ -12,7 +12,3 @@ export const getCurrentUser = () => {
 export const changePassword = (data: { currentPassword: string; newPassword: string }) => {
   return api.post('/auth/change-password', data);
 };
-
-export const getDemoCredentials = () => {
-  return api.get('/auth/demo-credentials');
-};

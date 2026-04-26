@@ -1,38 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Users, Shield } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/store/authStore';
-import { getDemoCredentials } from '@/services/authApi';
-import type { DemoCredentials } from '@/types';
 import { toast } from 'sonner';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
-  const [demoCredentials, setDemoCredentials] = useState<DemoCredentials | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-
-  useEffect(() => {
-    fetchDemoCredentials();
-  }, []);
-
-  const fetchDemoCredentials = async () => {
-    try {
-      const response = await getDemoCredentials();
-      setDemoCredentials(response.data);
-    } catch (error) {
-      console.error('Failed to fetch demo credentials:', error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,17 +39,9 @@ const LoginPage = () => {
     }
   };
 
-  const fillCredentials = (email: string, password: string) => {
-    setFormData({ email, password });
-  };
-
-  const fillEmployeeEmailOnly = (email: string) => {
-    setFormData({ email, password: '' });
-  };
-
   return (
     <div className="min-h-screen bg-[#0D132C] flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="w-full max-w-xl">
         {/* Login Form */}
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
           <CardHeader className="space-y-1">
@@ -134,107 +109,6 @@ const LoginPage = () => {
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Demo Credentials */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#F26B21]" />
-              Demo Access
-            </CardTitle>
-            <CardDescription className="text-white/60">
-              Click on any credential to auto-fill the login form
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="admin" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-white/5">
-                <TabsTrigger value="admin" className="data-[state=active]:bg-[#F26B21] data-[state=active]:text-white">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Admin
-                </TabsTrigger>
-                <TabsTrigger value="leaders" className="data-[state=active]:bg-[#F26B21] data-[state=active]:text-white">
-                  <Users className="w-4 h-4 mr-2" />
-                  Team Leaders
-                </TabsTrigger>
-                <TabsTrigger value="employees" className="data-[state=active]:bg-[#F26B21] data-[state=active]:text-white">
-                  Employees
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="admin" className="mt-4">
-                {demoCredentials?.admin && (
-                  <button
-                    onClick={() => fillCredentials(demoCredentials.admin.email, demoCredentials.admin.password)}
-                    className="w-full p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#F26B21]/50 transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-medium group-hover:text-[#F26B21] transition-colors">
-                          Administrator
-                        </p>
-                        <p className="text-white/50 text-sm">{demoCredentials.admin.email}</p>
-                        <p className="text-white/30 text-xs">Password: {demoCredentials.admin.password}</p>
-                      </div>
-                      <Shield className="w-8 h-8 text-[#F26B21]/50 group-hover:text-[#F26B21] transition-colors" />
-                    </div>
-                  </button>
-                )}
-              </TabsContent>
-
-              <TabsContent value="leaders" className="mt-4">
-                <div className="space-y-2 max-h-80 overflow-auto pr-2">
-                  {demoCredentials?.teamLeaders.map((leader, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        if (leader.password) {
-                          fillCredentials(leader.email, leader.password);
-                        } else {
-                          fillEmployeeEmailOnly(leader.email);
-                        }
-                      }}
-                      className="w-full p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#F26B21]/50 transition-all text-left group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-white font-medium group-hover:text-[#F26B21] transition-colors">
-                            {leader.team} Team
-                          </p>
-                          <p className="text-white/50 text-sm">{leader.email}</p>
-                          <p className="text-white/30 text-xs">
-                            Password: {leader.password || leader.passwordHint || 'use assigned password'}
-                          </p>
-                        </div>
-                        <Users className="w-6 h-6 text-white/30 group-hover:text-[#F26B21] transition-colors" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="employees" className="mt-4">
-                <p className="text-white/50 text-xs mb-3">
-                  Employee passwords are set when accounts are created. Enter the assigned password manually.
-                </p>
-                <div className="space-y-2 max-h-80 overflow-auto pr-2">
-                  {demoCredentials?.employees?.map((employee, index) => (
-                    <button
-                      key={`${employee.email}-${index}`}
-                      onClick={() => fillEmployeeEmailOnly(employee.email)}
-                      className="w-full p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#F26B21]/50 transition-all text-left"
-                    >
-                      <p className="text-white font-medium">{employee.name}</p>
-                      <p className="text-white/50 text-sm">{employee.team}</p>
-                      <p className="text-white/50 text-sm">{employee.email}</p>
-                      <p className="text-white/30 text-xs">Password: use the one assigned by team leader</p>
-                    </button>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
           </CardContent>
         </Card>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ClipboardCheck, 
@@ -9,7 +9,8 @@ import {
   Minus,
   ChevronRight,
   History,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,13 +35,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { getAllEvaluations, createOrUpdateEvaluation, getEmployeeStats } from '@/services/evaluationApi';
 import { getAllUsers } from '@/services/userApi';
+import { getAllTeams, getTeamEvaluationMetrics, updateTeamEvaluationMetrics } from '@/services/teamApi';
 import { useAuthStore } from '@/store/authStore';
 import type { Evaluation, User } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const CRITERIA = ['Code Quality', 'Performance', 'Communication', 'Problem Solving', 'Teamwork', 'Punctuality'];
 const getUserId = (value?: Partial<User> | null) => value?.id || (value as any)?._id || '';
 
 const EvaluationsPage = () => {
@@ -48,6 +49,9 @@ const EvaluationsPage = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
   const evaluationTargetRole = isAdmin ? 'team_leader' : 'employee';
+  const [selectedMetricsTeam, setSelectedMetricsTeam] = useState('');
+  const [newMetricName, setNewMetricName] = useState('');
+  const [metrics, setMetrics] = useState<{ _id?: string; name: string; isActive: boolean }[]>([]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isEvaluateDialogOpen, setIsEvaluateDialogOpen] = useState(false);
@@ -57,8 +61,13 @@ const EvaluationsPage = () => {
     employeeId: '',
     month: MONTHS[new Date().getMonth()],
     year: new Date().getFullYear(),
-    criteria: CRITERIA.map(name => ({ name, score: 70, notes: '' }))
+    criteria: [] as { name: string; score: number; notes: string }[]
   });
+
+  const activeMetrics = metrics.filter((metric) => metric.isActive);
+
+  const buildCriteriaFromActiveMetrics = () =>
+    activeMetrics.map((metric) => ({ name: metric.name, score: 70, notes: '' }));
 
   const { data: evaluations, isLoading } = useQuery({
     queryKey: ['evaluations'],
@@ -76,6 +85,67 @@ const EvaluationsPage = () => {
       return response.data as User[];
     }
   });
+
+  const { data: teams } = useQuery({
+    queryKey: ['teams-for-evaluation-metrics'],
+    queryFn: async () => {
+      const response = await getAllTeams();
+      return response.data;
+    },
+    enabled: isAdmin
+  });
+
+  useEffect(() => {
+    if (!isAdmin && user?.team) {
+      setSelectedMetricsTeam(user.team);
+    }
+  }, [isAdmin, user?.team]);
+
+  const { data: teamMetricsResponse } = useQuery({
+    queryKey: ['team-evaluation-metrics', isAdmin ? selectedMetricsTeam : user?.team],
+    queryFn: async () => {
+      const response = await getTeamEvaluationMetrics(isAdmin ? selectedMetricsTeam || undefined : undefined);
+      return response.data;
+    },
+    enabled: Boolean(user?.team || selectedMetricsTeam)
+  });
+
+  const updateMetricsMutation = useMutation({
+    mutationFn: (payload: { team?: string; metrics: { name: string; isActive: boolean }[] }) =>
+      updateTeamEvaluationMetrics(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-evaluation-metrics'] });
+      toast.success('Evaluation criteria updated');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update criteria');
+    }
+  });
+
+  useEffect(() => {
+    if (!teamMetricsResponse?.metrics) return;
+
+    setMetrics((teamMetricsResponse.metrics || []).map((metric: any) => ({
+      _id: metric._id,
+      name: metric.name,
+      isActive: metric.isActive !== false
+    })));
+  }, [teamMetricsResponse]);
+
+  useEffect(() => {
+    if (activeMetrics.length === 0) return;
+
+    setEvaluationData((prev) => {
+      if (prev.criteria.length > 0) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        criteria: buildCriteriaFromActiveMetrics()
+      };
+    });
+  }, [activeMetrics.length]);
 
   const { data: employeeStats } = useQuery({
     queryKey: ['employeeStats', getUserId(selectedEmployeeData)],
@@ -107,7 +177,7 @@ const EvaluationsPage = () => {
       employeeId: '',
       month: MONTHS[new Date().getMonth()],
       year: new Date().getFullYear(),
-      criteria: CRITERIA.map(name => ({ name, score: 70, notes: '' }))
+      criteria: buildCriteriaFromActiveMetrics()
     });
   };
 
@@ -129,12 +199,22 @@ const EvaluationsPage = () => {
   };
 
   const openEvaluateDialog = (employee?: User) => {
+    const nextCriteria = buildCriteriaFromActiveMetrics();
+    if (nextCriteria.length === 0) {
+      toast.error('Enable at least one evaluation metric first');
+      return;
+    }
+
     if (employee) {
       setEvaluationData({
         ...evaluationData,
         employeeId: getUserId(employee)
       });
     }
+    setEvaluationData((prev) => ({
+      ...prev,
+      criteria: nextCriteria
+    }));
     setIsEvaluateDialogOpen(true);
   };
 
@@ -144,8 +224,42 @@ const EvaluationsPage = () => {
   };
 
   const calculateTotalScore = () => {
+    if (evaluationData.criteria.length === 0) return 0;
     const total = evaluationData.criteria.reduce((sum, c) => sum + c.score, 0);
     return Math.round(total / evaluationData.criteria.length);
+  };
+
+  const handleAddMetric = () => {
+    const normalized = newMetricName.trim();
+    if (!normalized) return;
+
+    const exists = metrics.some((metric) => metric.name.toLowerCase() === normalized.toLowerCase());
+    if (exists) {
+      toast.error('Metric already exists');
+      return;
+    }
+
+    setMetrics((prev) => [...prev, { name: normalized, isActive: true }]);
+    setNewMetricName('');
+  };
+
+  const handleSaveMetrics = () => {
+    const payload = {
+      team: isAdmin ? selectedMetricsTeam : undefined,
+      metrics
+    };
+
+    if (isAdmin && !selectedMetricsTeam) {
+      toast.error('Select a team first');
+      return;
+    }
+
+    if (!metrics.length) {
+      toast.error('Add at least one metric');
+      return;
+    }
+
+    updateMetricsMutation.mutate(payload);
   };
 
   const getPerformanceColor = (score: number) => {
@@ -220,6 +334,97 @@ const EvaluationsPage = () => {
               className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white">Dynamic Evaluation Criteria</CardTitle>
+          <CardDescription className="text-white/60">
+            Team leaders can add, remove, and enable/disable metrics based on team work type.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isAdmin && (
+            <div className="space-y-2">
+              <Label>Select Team</Label>
+              <Select value={selectedMetricsTeam} onValueChange={setSelectedMetricsTeam}>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectValue placeholder="Choose team" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0D132C] border-white/10">
+                  {teams?.map((team: any) => (
+                    <SelectItem key={team._id} value={team.name} className="text-white">
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Input
+              value={newMetricName}
+              onChange={(e) => setNewMetricName(e.target.value)}
+              className="sm:col-span-2 bg-white/5 border-white/10 text-white"
+              placeholder="Add new metric name"
+            />
+            <Button
+              type="button"
+              onClick={handleAddMetric}
+              className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Metric
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {metrics.map((metric, index) => (
+              <div key={`${metric.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 p-3 bg-white/5">
+                <div>
+                  <p className="text-white font-medium">{metric.name}</p>
+                  <p className="text-xs text-white/50">{metric.isActive ? 'Enabled' : 'Disabled'}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-white/20 text-white"
+                    onClick={() =>
+                      setMetrics((prev) =>
+                        prev.map((item, i) =>
+                          i === index ? { ...item, isActive: !item.isActive } : item
+                        )
+                      )
+                    }
+                  >
+                    {metric.isActive ? 'Disable' : 'Enable'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    className="text-red-300 hover:bg-red-500/10"
+                    onClick={() => setMetrics((prev) => prev.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleSaveMetrics}
+            className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
+            disabled={updateMetricsMutation.isPending}
+          >
+            {updateMetricsMutation.isPending ? 'Saving...' : 'Save Criteria Settings'}
+          </Button>
         </CardContent>
       </Card>
 

@@ -7,6 +7,8 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get('/stats/:teamName', authorize('admin', 'team_leader'), teamController.getTeamStats);
+router.get('/evaluation-metrics', authorize('admin', 'team_leader'), teamController.getTeamEvaluationMetrics);
+router.put('/evaluation-metrics', authorize('admin', 'team_leader'), teamController.updateTeamEvaluationMetrics);
 router.get('/', authorize('admin', 'team_leader'), teamController.getAllTeams);
 router.post('/', authorize('admin'), teamController.createTeam);
 router.get('/:id', authorize('admin', 'team_leader'), teamController.getTeamById);

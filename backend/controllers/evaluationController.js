@@ -1,16 +1,28 @@
 const { validationResult } = require('express-validator');
 const Evaluation = require('../models/Evaluation');
 const User = require('../models/User');
+const Team = require('../models/Team');
 
-// Evaluation criteria names
-const CRITERIA_NAMES = [
-  'Code Quality',
-  'Performance',
-  'Communication',
-  'Problem Solving',
-  'Teamwork',
-  'Punctuality'
-];
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getTeamActiveMetricNames = async (teamName) => {
+  const normalizedTeamName = String(teamName || '').trim();
+  if (!normalizedTeamName) return [];
+
+  const team = await Team.findOne({
+    name: {
+      $regex: `^${escapeRegex(normalizedTeamName)}$`,
+      $options: 'i'
+    }
+  }).select('evaluationMetrics');
+
+  if (!team) return [];
+
+  return (team.evaluationMetrics || [])
+    .filter((metric) => metric?.isActive !== false)
+    .map((metric) => String(metric.name || '').trim())
+    .filter(Boolean);
+};
 
 // Generate AI insights based on scores
 const generateAIInsights = (criteria, previousEvaluation = null) => {
@@ -232,8 +244,36 @@ const createOrUpdateEvaluation = async (req, res) => {
       ]
     }).sort({ year: -1, month: -1 });
 
+    const normalizedCriteria = Array.isArray(criteria)
+      ? criteria
+          .map((criterion) => ({
+            name: String(criterion?.name || '').trim(),
+            score: Number(criterion?.score),
+            notes: String(criterion?.notes || '').trim()
+          }))
+          .filter((criterion) => criterion.name)
+      : [];
+
+    if (normalizedCriteria.length === 0) {
+      return res.status(400).json({ message: 'At least one evaluation criterion is required' });
+    }
+
+    const invalidScore = normalizedCriteria.find((criterion) => !Number.isFinite(criterion.score) || criterion.score < 0 || criterion.score > 100);
+    if (invalidScore) {
+      return res.status(400).json({ message: `Criterion score for ${invalidScore.name} must be between 0 and 100` });
+    }
+
+    const activeMetricNames = await getTeamActiveMetricNames(evaluatedUser.team);
+    if (activeMetricNames.length > 0) {
+      const allowedNames = new Set(activeMetricNames.map((name) => name.toLowerCase()));
+      const disallowed = normalizedCriteria.find((criterion) => !allowedNames.has(criterion.name.toLowerCase()));
+      if (disallowed) {
+        return res.status(400).json({ message: `Criterion ${disallowed.name} is not enabled for ${evaluatedUser.team}` });
+      }
+    }
+
     // Generate AI insights
-    const aiData = generateAIInsights(criteria, previousEvaluation);
+    const aiData = generateAIInsights(normalizedCriteria, previousEvaluation);
 
     // Check if evaluation already exists for this month
     const existingEvaluation = await Evaluation.findOne({
@@ -246,7 +286,7 @@ const createOrUpdateEvaluation = async (req, res) => {
 
     if (existingEvaluation) {
       // Update existing evaluation
-      existingEvaluation.criteria = criteria;
+      existingEvaluation.criteria = normalizedCriteria;
       existingEvaluation.notes = notes;
       existingEvaluation.totalScore = aiData.totalScore;
       existingEvaluation.aiFeedback = aiData.aiFeedback;
@@ -269,7 +309,7 @@ const createOrUpdateEvaluation = async (req, res) => {
         evaluatedBy: req.user.id,
         month,
         year,
-        criteria,
+        criteria: normalizedCriteria,
         notes,
         totalScore: aiData.totalScore,
         aiFeedback: aiData.aiFeedback,
@@ -336,18 +376,25 @@ const getEmployeeStats = async (req, res) => {
       current.totalScore < worst.totalScore ? current : worst
     );
 
-    // Calculate criterion averages
-    const criterionAverages = {};
-    CRITERIA_NAMES.forEach(criterionName => {
-      const criterionScores = evaluations.flatMap(e => 
-        e.criteria.filter(c => c.name === criterionName).map(c => c.score)
-      );
-      if (criterionScores.length > 0) {
-        criterionAverages[criterionName] = Math.round(
-          criterionScores.reduce((a, b) => a + b, 0) / criterionScores.length
-        );
+    const criterionBuckets = {};
+    for (const evaluation of evaluations) {
+      for (const criterion of evaluation.criteria || []) {
+        const criterionName = String(criterion.name || '').trim();
+        if (!criterionName) continue;
+
+        if (!criterionBuckets[criterionName]) {
+          criterionBuckets[criterionName] = [];
+        }
+        criterionBuckets[criterionName].push(criterion.score);
       }
-    });
+    }
+
+    const criterionAverages = Object.fromEntries(
+      Object.entries(criterionBuckets).map(([criterionName, scores]) => {
+        const average = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        return [criterionName, average];
+      })
+    );
 
     res.json({
       totalEvaluations: evaluations.length,
@@ -383,6 +430,5 @@ module.exports = {
   getEvaluationById,
   getEmployeeEvaluationHistory,
   createOrUpdateEvaluation,
-  getEmployeeStats,
-  CRITERIA_NAMES
+  getEmployeeStats
 };

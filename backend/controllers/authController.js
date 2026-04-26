@@ -2,8 +2,6 @@ const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
 
-const toAccountName = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
 // Login
 const login = async (req, res) => {
   try {
@@ -111,48 +109,8 @@ const changePassword = async (req, res) => {
   }
 };
 
-// Get demo credentials
-const getDemoCredentials = async (req, res) => {
-  try {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(404).json({ message: 'Not found' });
-    }
-
-    const teamLeaders = await User.find({ role: 'team_leader', isActive: true })
-      .select('team email')
-      .sort({ team: 1, email: 1 });
-
-    const employees = await User.find({ role: 'employee', isActive: true })
-      .select('name team email')
-      .sort({ team: 1, name: 1 });
-
-    const demoCredentials = {
-      admin: {
-        email: 'admin@demo.com',
-        password: '123456'
-      },
-      teamLeaders: teamLeaders.map((leader) => ({
-        team: leader.team,
-        email: leader.email,
-        passwordHint: 'Use the password assigned when this account was created'
-      })),
-      employees: employees.map((employee) => ({
-        name: employee.name,
-        team: employee.team,
-        email: employee.email
-      }))
-    };
-
-    res.json(demoCredentials);
-  } catch (error) {
-    console.error('Get demo credentials error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
 module.exports = {
   login,
   getCurrentUser,
-  changePassword,
-  getDemoCredentials
+  changePassword
 };

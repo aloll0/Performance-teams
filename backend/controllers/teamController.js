@@ -3,6 +3,38 @@ const Team = require('../models/Team');
 const User = require('../models/User');
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const DEFAULT_EVALUATION_METRICS = [
+  'Code Quality',
+  'Performance',
+  'Communication',
+  'Problem Solving',
+  'Teamwork',
+  'Punctuality'
+];
+
+const normalizeEvaluationMetrics = (metrics) => {
+  if (!Array.isArray(metrics) || metrics.length === 0) {
+    return DEFAULT_EVALUATION_METRICS.map((name) => ({ name, isActive: true }));
+  }
+
+  const seen = new Set();
+
+  return metrics
+    .map((metric) => {
+      const name = String(metric?.name || '').trim();
+      if (!name) return null;
+
+      const normalizedKey = name.toLowerCase();
+      if (seen.has(normalizedKey)) return null;
+      seen.add(normalizedKey);
+
+      return {
+        name,
+        isActive: metric?.isActive !== false
+      };
+    })
+    .filter(Boolean);
+};
 
 // Get all teams
 const getAllTeams = async (req, res) => {
@@ -277,11 +309,93 @@ const getTeamStats = async (req, res) => {
   }
 };
 
+const getTeamEvaluationMetrics = async (req, res) => {
+  try {
+    const requestedTeam = String(req.query.team || '').trim();
+    const teamName = req.user.role === 'team_leader'
+      ? req.user.team
+      : (requestedTeam || req.user.team);
+
+    if (!teamName) {
+      return res.status(400).json({ message: 'Team is required' });
+    }
+
+    const team = await Team.findOne({
+      name: {
+        $regex: `^${escapeRegex(teamName)}$`,
+        $options: 'i'
+      }
+    });
+
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    if (req.user.role === 'team_leader' && team.name !== req.user.team) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const metrics = normalizeEvaluationMetrics(team.evaluationMetrics || []);
+    return res.json({
+      team: team.name,
+      metrics
+    });
+  } catch (error) {
+    console.error('Get team evaluation metrics error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const updateTeamEvaluationMetrics = async (req, res) => {
+  try {
+    const requestedTeam = String(req.body.team || req.query.team || '').trim();
+    const teamName = req.user.role === 'team_leader' ? req.user.team : requestedTeam;
+
+    if (!teamName) {
+      return res.status(400).json({ message: 'Team is required' });
+    }
+
+    const team = await Team.findOne({
+      name: {
+        $regex: `^${escapeRegex(teamName)}$`,
+        $options: 'i'
+      }
+    });
+
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    if (req.user.role === 'team_leader' && team.name !== req.user.team) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const metrics = normalizeEvaluationMetrics(req.body.metrics || []);
+    if (metrics.length === 0) {
+      return res.status(400).json({ message: 'At least one evaluation metric is required' });
+    }
+
+    team.evaluationMetrics = metrics;
+    await team.save();
+
+    return res.json({
+      message: 'Evaluation metrics updated successfully',
+      team: team.name,
+      metrics: normalizeEvaluationMetrics(team.evaluationMetrics)
+    });
+  } catch (error) {
+    console.error('Update team evaluation metrics error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getAllTeams,
   getTeamById,
   createTeam,
   updateTeam,
   deleteTeam,
-  getTeamStats
+  getTeamStats,
+  getTeamEvaluationMetrics,
+  updateTeamEvaluationMetrics
 };

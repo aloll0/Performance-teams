@@ -38,8 +38,40 @@ const serializeCourse = (course, reqUserId, teamSizes = {}) => {
       userId: entry.userId?._id ? entry.userId._id.toString() : toStringId(entry.userId),
       userName: entry.userId?.name,
       completedAt: entry.completedAt
+    })),
+    videos: (course.videos || []).map((video) => ({
+      id: video._id?.toString?.() || toStringId(video._id),
+      title: String(video.title || '').trim(),
+      url: video.url,
+      addedAt: video.addedAt
     }))
   };
+};
+
+const sanitizeVideoInput = (video) => {
+  const title = String(video?.title || '').trim();
+  const url = String(video?.url || '').trim();
+
+  if (!url) return null;
+
+  try {
+    new URL(url);
+  } catch (_error) {
+    return null;
+  }
+
+  return {
+    title,
+    url
+  };
+};
+
+const normalizeVideos = (videos = []) => {
+  if (!Array.isArray(videos)) return [];
+
+  return videos
+    .map(sanitizeVideoInput)
+    .filter(Boolean);
 };
 
 const resolveRequestedTeam = (req) => {
@@ -86,13 +118,14 @@ const getCourses = async (req, res) => {
 
 const createCourse = async (req, res) => {
   try {
-    const { title, url, platform = '', focusArea = '', notes = '', team } = req.body;
+    const { title, url, videos = [], platform = '', focusArea = '', notes = '', team } = req.body;
 
     const normalizedTitle = String(title || '').trim();
     const normalizedUrl = String(url || '').trim();
     const normalizedPlatform = String(platform || '').trim();
     const normalizedFocusArea = String(focusArea || '').trim();
     const normalizedNotes = String(notes || '').trim();
+    const normalizedVideos = normalizeVideos(videos);
 
     const normalizedTeam = req.user.role === 'team_leader'
       ? req.user.team
@@ -102,16 +135,21 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ message: 'Course title is required' });
     }
 
-    if (!normalizedUrl) {
-      return res.status(400).json({ message: 'Course URL is required' });
+    if (!normalizedUrl && normalizedVideos.length === 0) {
+      return res.status(400).json({ message: 'At least one video URL is required' });
     }
 
-    try {
-      // Validate URL shape to avoid saving malformed links.
-      new URL(normalizedUrl);
-    } catch (_error) {
-      return res.status(400).json({ message: 'Please provide a valid URL' });
+    if (normalizedUrl) {
+      try {
+        new URL(normalizedUrl);
+      } catch (_error) {
+        return res.status(400).json({ message: 'Please provide a valid URL' });
+      }
     }
+
+    const allVideos = normalizedVideos.length > 0
+      ? normalizedVideos
+      : [{ title: normalizedTitle, url: normalizedUrl }];
 
     if (!normalizedTeam) {
       return res.status(400).json({ message: 'Team is required' });
@@ -123,6 +161,8 @@ const createCourse = async (req, res) => {
       platform: normalizedPlatform,
       focusArea: normalizedFocusArea,
       notes: normalizedNotes,
+      url: allVideos[0]?.url || normalizedUrl,
+      videos: allVideos,
       team: normalizedTeam,
       createdBy: req.user.id,
       completions: []
@@ -144,7 +184,12 @@ const createCourse = async (req, res) => {
     });
   } catch (error) {
     console.error('Create course error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    return res.status(500).json({ message: 'Server error', details: error.message });
   }
 };
 
@@ -216,6 +261,100 @@ const deleteCourse = async (req, res) => {
     return res.json({ message: 'Course removed successfully' });
   } catch (error) {
     console.error('Delete course error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      courseId: req.params.id
+    });
+    return res.status(500).json({ message: 'Server error', details: error.message });
+  }
+};
+
+const addCourseVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const course = await LearningCourse.findById(id)
+      .populate('createdBy', 'name email')
+      .populate('completions.userId', 'name');
+
+    if (!course || !course.isActive) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (req.user.role === 'team_leader' && course.team !== req.user.team) {
+      return res.status(403).json({ message: 'Cannot update a course outside your team' });
+    }
+
+    const normalizedVideo = sanitizeVideoInput(req.body || {});
+    if (!normalizedVideo) {
+      return res.status(400).json({ message: 'Please provide a valid video URL' });
+    }
+
+    course.videos.push(normalizedVideo);
+    if (!course.url) {
+      course.url = normalizedVideo.url;
+    }
+    await course.save();
+
+    const teamSize = await User.countDocuments({
+      team: course.team,
+      isActive: true,
+      role: { $in: ['employee', 'team_leader'] }
+    });
+
+    return res.status(201).json({
+      message: 'Video added successfully',
+      course: serializeCourse(course, req.user.id, { [course.team]: teamSize })
+    });
+  } catch (error) {
+    console.error('Add course video error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const removeCourseVideo = async (req, res) => {
+  try {
+    const { id, videoId } = req.params;
+    const course = await LearningCourse.findById(id)
+      .populate('createdBy', 'name email')
+      .populate('completions.userId', 'name');
+
+    if (!course || !course.isActive) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (req.user.role === 'team_leader' && course.team !== req.user.team) {
+      return res.status(403).json({ message: 'Cannot update a course outside your team' });
+    }
+
+    const currentVideoCount = (course.videos || []).length;
+    const nextVideos = (course.videos || []).filter((video) => toStringId(video._id) !== toStringId(videoId));
+
+    if (nextVideos.length === currentVideoCount) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
+    if (nextVideos.length === 0) {
+      return res.status(400).json({ message: 'A course must keep at least one video' });
+    }
+
+    course.videos = nextVideos;
+    course.url = nextVideos[0].url;
+    await course.save();
+
+    const teamSize = await User.countDocuments({
+      team: course.team,
+      isActive: true,
+      role: { $in: ['employee', 'team_leader'] }
+    });
+
+    return res.json({
+      message: 'Video removed successfully',
+      course: serializeCourse(course, req.user.id, { [course.team]: teamSize })
+    });
+  } catch (error) {
+    console.error('Remove course video error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -224,5 +363,7 @@ module.exports = {
   getCourses,
   createCourse,
   updateCompletion,
-  deleteCourse
+  deleteCourse,
+  addCourseVideo,
+  removeCourseVideo
 };

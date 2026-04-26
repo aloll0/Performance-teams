@@ -31,3 +31,16 @@ export const deleteTeam = (id: string) => {
 export const getTeamStats = (teamName: string) => {
   return api.get(`/teams/stats/${teamName}`);
 };
+
+export const getTeamEvaluationMetrics = (team?: string) => {
+  return api.get('/teams/evaluation-metrics', {
+    params: team ? { team } : undefined
+  });
+};
+
+export const updateTeamEvaluationMetrics = (data: {
+  team?: string;
+  metrics: { name: string; isActive: boolean }[];
+}) => {
+  return api.put('/teams/evaluation-metrics', data);
+};

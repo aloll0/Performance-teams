@@ -12,10 +12,10 @@ router.get('/team-leaders', authorize('admin', 'team_leader'), userController.ge
 router.get('/team/:team', authorize('admin', 'team_leader'), userController.getEmployeesByTeam);
 router.post('/move', authorize('admin'), userController.moveEmployee);
 router.get('/', authorize('admin', 'team_leader'), userController.getAllUsers);
-router.post('/', authorize('admin', 'team_leader'), userController.createUser);
+router.post('/', authorize('admin'), userController.createUser);
 router.post('/:id/reset-password', authorize('admin'), userController.adminResetUserPassword);
 router.get('/:id', authorize('admin', 'team_leader'), userController.getUserById);
-router.put('/:id', authorize('admin', 'team_leader'), userController.updateUser);
-router.delete('/:id', authorize('admin', 'team_leader'), userController.deleteUser);
+router.put('/:id', authorize('admin'), userController.updateUser);
+router.delete('/:id', authorize('admin'), userController.deleteUser);
 
 module.exports = router;

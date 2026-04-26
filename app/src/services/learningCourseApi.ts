@@ -2,11 +2,17 @@ import api from './api';
 
 export type CourseInput = {
   title: string;
-  url: string;
+  url?: string;
+  videos?: { title?: string; url: string }[];
   platform?: string;     
   focusArea?: string;
   notes?: string;
   team?: string;
+};
+
+export type CourseVideoInput = {
+  title?: string;
+  url: string;
 };
 
 const PRIMARY_BASE = '/learning-courses';
@@ -49,4 +55,12 @@ export const setLearningCourseCompletion = (id: string, completed: boolean) => {
 
 export const deleteLearningCourse = (id: string) => {
   return withFallback((basePath) => api.delete(`${basePath}/${id}`));
+};
+
+export const addLearningCourseVideo = (id: string, data: CourseVideoInput) => {
+  return withFallback((basePath) => api.post(`${basePath}/${id}/videos`, data));
+};
+
+export const removeLearningCourseVideo = (id: string, videoId: string) => {
+  return withFallback((basePath) => api.delete(`${basePath}/${id}/videos/${videoId}`));
 };

@@ -1,5 +1,26 @@
 const mongoose = require('mongoose');
 
+const DEFAULT_EVALUATION_METRICS = [
+  'Code Quality',
+  'Performance',
+  'Communication',
+  'Problem Solving',
+  'Teamwork',
+  'Punctuality'
+];
+
+const evaluationMetricSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { _id: true });
+
 const teamSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -15,6 +36,10 @@ const teamSchema = new mongoose.Schema({
   description: {
     type: String,
     default: ''
+  },
+  evaluationMetrics: {
+    type: [evaluationMetricSchema],
+    default: () => DEFAULT_EVALUATION_METRICS.map((name) => ({ name, isActive: true }))
   },
   createdAt: {
     type: Date,

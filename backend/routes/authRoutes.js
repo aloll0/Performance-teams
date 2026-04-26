@@ -17,8 +17,5 @@ router.post(
   [body('currentPassword').isString().notEmpty(), body('newPassword').isString().isLength({ min: 6 })],
   authController.changePassword
 );
-if (process.env.NODE_ENV !== 'production') {
-  router.get('/demo-credentials', authController.getDemoCredentials);
-}
 
 module.exports = router;

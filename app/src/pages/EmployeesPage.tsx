@@ -334,6 +334,7 @@ const EmployeesPage = () => {
             resetForm();
             setIsAddDialogOpen(true);
           }}
+          disabled={!isAdmin}
           className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -405,7 +406,7 @@ const EmployeesPage = () => {
                   <th className="text-left py-3 px-4 text-white/60 font-medium">Role</th>
                   <th className="text-left py-3 px-4 text-white/60 font-medium">Team</th>
                   <th className="text-left py-3 px-4 text-white/60 font-medium">Level</th>
-                  <th className="text-left py-3 px-4 text-white/60 font-medium">Actions</th>
+                  {isAdmin && <th className="text-left py-3 px-4 text-white/60 font-medium">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -441,6 +442,7 @@ const EmployeesPage = () => {
                         {employee.role === 'employee' ? employee.level : '-'}
                       </span>
                     </td>
+                    {isAdmin && (
                     <td className="py-3 px-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -456,17 +458,15 @@ const EmployeesPage = () => {
                             <Edit2 className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          {isAdmin && (
-                            <DropdownMenuItem 
-                              onClick={() => openMoveDialog(employee)}
-                              disabled={employee.role !== 'employee'}
-                              className="text-white hover:bg-white/10"
-                            >
-                              <Move className="w-4 h-4 mr-2" />
-                              Move Team
-                            </DropdownMenuItem>
-                          )}
-                          {isAdmin && employee.role !== 'admin' && (
+                          <DropdownMenuItem 
+                            onClick={() => openMoveDialog(employee)}
+                            disabled={employee.role !== 'employee'}
+                            className="text-white hover:bg-white/10"
+                          >
+                            <Move className="w-4 h-4 mr-2" />
+                            Move Team
+                          </DropdownMenuItem>
+                          {employee.role !== 'admin' && (
                             <DropdownMenuItem
                               onClick={() => openResetPasswordDialog(employee)}
                               className="text-white hover:bg-white/10"
@@ -485,6 +485,7 @@ const EmployeesPage = () => {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

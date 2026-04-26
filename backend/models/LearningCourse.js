@@ -15,6 +15,23 @@ const completionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const courseVideoSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  url: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const learningCourseSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -23,7 +40,7 @@ const learningCourseSchema = new mongoose.Schema({
   },
   url: {
     type: String,
-    required: true,
+    default: '',
     trim: true
   },
   platform: {
@@ -53,6 +70,10 @@ const learningCourseSchema = new mongoose.Schema({
   },
   completions: {
     type: [completionSchema],
+    default: []
+  },
+  videos: {
+    type: [courseVideoSchema],
     default: []
   },
   isActive: {
