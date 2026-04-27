@@ -466,44 +466,28 @@ const EvaluationsPage = () => {
                 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-white/60">{evaluation.month} {evaluation.year}</span>
-                  <div className="flex items-center gap-1">
-                    {getTrendIcon(evaluation.improvementPercentage)}
-                    <span className={evaluation.improvementPercentage >= 0 ? 'text-green-400' : 'text-red-400'}>
-                      {evaluation.improvementPercentage > 0 ? '+' : ''}{evaluation.improvementPercentage}%
-                    </span>
-                  </div>
                 </div>
 
-                {/* AI Feedback */}
-                {evaluation.aiFeedback && (
-                  <div className="p-3 rounded-lg bg-[#F26B21]/10 border border-[#F26B21]/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Sparkles className="w-4 h-4 text-[#F26B21]" />
-                      <span className="text-[#F26B21] text-xs font-medium">AI Insight</span>
-                    </div>
-                    <p className="text-white/70 text-sm line-clamp-2">{evaluation.aiFeedback}</p>
-                  </div>
-                )}
 
                 <div className="flex gap-2 pt-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 border-white/20  hover:bg-white/10"
+                    className="flex-1 border-white/20  hover:bg-white/10 text-white"
                     onClick={() => employee && openEvaluateDialog(employee)}
                     disabled={!employee}
                   >
-                    <ClipboardCheck className="w-4 h-4 mr-2 text-black" />
+                    <ClipboardCheck className="w-4 h-4 mr-2 text-white " />
                     Evaluate
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 border-white/20  hover:bg-white/10"
+                    className="flex-1 border-white/20  hover:bg-white/10 text-white"
                     onClick={() => employee && openHistoryDialog(employee)}
                     disabled={!employee}
                   >
-                    <History className="w-4 h-4 mr-2 text-black" />
+                    <History className="w-4 h-4 mr-2 text-white" />
                     History
                   </Button>
                 </div>
@@ -620,7 +604,7 @@ const EvaluationsPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsEvaluateDialogOpen(false)}
-                className="border-white/20 hover:bg-white/10"
+                className="border-white/20 hover:bg-white/10 text-white"
               >
                 Cancel
               </Button>

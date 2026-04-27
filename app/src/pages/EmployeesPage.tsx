@@ -446,7 +446,7 @@ const EmployeesPage = () => {
                     <td className="py-3 px-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
+                          <Button variant="ghost" size="sm" className="text-white/70 hover:text-black">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -617,7 +617,7 @@ const EmployeesPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsAddDialogOpen(false)}
-                className="border-white/20 hover:bg-white/10"
+                className="border-white/20 hover:bg-white/10 text-white"
               >
                 Cancel
               </Button>
@@ -672,7 +672,7 @@ const EmployeesPage = () => {
                 type="button"
                 variant="outline"
                 onClick={() => setIsResetPasswordDialogOpen(false)}
-                className="border-white/20 hover:bg-white/10"
+                className="border-white/20 hover:bg-white/10 text-white"
               >
                 Cancel
               </Button>
@@ -762,7 +762,7 @@ const EmployeesPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsEditDialogOpen(false)}
-                className="border-white/20 hover:bg-white/10"
+                className="border-white/20 hover:bg-white/10 text-white"
               >
                 Cancel
               </Button>
@@ -811,7 +811,7 @@ const EmployeesPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsMoveDialogOpen(false)}
-                className="border-white/20 hover:bg-white/10"
+                className="border-white/20 hover:bg-white/10 text-white"
               >
                 Cancel
               </Button>

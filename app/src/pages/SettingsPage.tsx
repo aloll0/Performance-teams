@@ -276,11 +276,11 @@ const SettingsPage = () => {
             <Button
               type="button"
               variant="outline"
-              className="border-white/20 hover:bg-white/10"
+              className="border-white/20 hover:bg-white/10 text-white"
               onClick={() => removeAvatarMutation.mutate()}
               disabled={removeAvatarMutation.isPending || !user?.avatar}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <Trash2 className="w-4 h-4 mr-2 text-white" />
               {removeAvatarMutation.isPending ? 'Removing...' : 'Remove Image'}
             </Button>
           </div>
@@ -319,47 +319,6 @@ const SettingsPage = () => {
         </Card>
       )}
 
-      {/* Notifications */}
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Bell className="w-5 h-5 text-[#F26B21]" />
-            Notifications
-          </CardTitle>
-          <CardDescription className="text-white/60">
-            Configure your notification preferences
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-white">Email Notifications</Label>
-              <p className="text-white/50 text-sm">Receive email updates about your account</p>
-            </div>
-            <Switch
-              checked={preferences.emailNotifications}
-              onCheckedChange={(checked) => 
-                setPreferences({ ...preferences, emailNotifications: checked })
-              }
-              className="data-[state=checked]:bg-[#F26B21]"
-            />
-          </div>
-          <Separator className="bg-white/10" />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-white">Evaluation Reminders</Label>
-              <p className="text-white/50 text-sm">Get reminded about upcoming evaluations</p>
-            </div>
-            <Switch
-              checked={preferences.evaluationReminders}
-              onCheckedChange={(checked) => 
-                setPreferences({ ...preferences, evaluationReminders: checked })
-              }
-              className="data-[state=checked]:bg-[#F26B21]"
-            />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* About */}
       <Card className="bg-white/5 border-white/10">

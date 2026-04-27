@@ -70,27 +70,6 @@ const employeeBlueprints = [
   { id: 'e30', name: 'Asmaa', team: 'Content', level: 'Implementor' }
 ];
 
-const quizSeed = [
-  {
-    title: 'Performance Fundamentals',
-    description: 'A short quiz for onboarding and team calibration.',
-    questions: [
-      { question: 'What does KPI stand for?', options: ['Key Performance Indicator', 'Known Project Item', 'Kernel Process Interface'], correctAnswer: 0, points: 2 },
-      { question: 'Which metric best tracks delivery reliability?', options: ['On-time completion rate', 'Coffee count', 'Meeting duration'], correctAnswer: 0, points: 2 },
-      { question: 'Which is the best feedback practice?', options: ['Be specific and actionable', 'Wait until year end', 'Only praise'], correctAnswer: 0, points: 1 }
-    ],
-    timeLimit: 20
-  },
-  {
-    title: 'Team Collaboration Basics',
-    description: 'Checks collaborative habits used across the SaaS dashboard.',
-    questions: [
-      { question: 'What should happen after a blocker is found?', options: ['Escalate early', 'Ignore it', 'Hide it'], correctAnswer: 0, points: 2 },
-      { question: 'What keeps a team aligned?', options: ['Clear ownership', 'Random tasks', 'No documentation'], correctAnswer: 0, points: 2 }
-    ],
-    timeLimit: 15
-  }
-];
 
 function buildCriteria(scores) {
   const names = ['Code Quality', 'Performance', 'Communication', 'Problem Solving', 'Teamwork', 'Punctuality'];
@@ -192,16 +171,6 @@ async function seedDemoData() {
     employees.push(user);
   }
 
-  for (const quiz of quizSeed) {
-    await Quiz.findOneAndUpdate(
-      { title: quiz.title },
-      {
-        ...quiz,
-        createdBy: admin._id
-      },
-      { upsert: true, returnDocument: 'after' }
-    );
-  }
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June'];
   for (let index = 0; index < employees.length; index += 1) {

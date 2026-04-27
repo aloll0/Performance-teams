@@ -88,7 +88,6 @@ const generateAIInsights = (criteria, previousEvaluation = null) => {
     performanceLevel,
     suggestion,
     improvementPercentage,
-    aiFeedback: feedback,
     aiInsights: {
       trend: improvementPercentage >= 0 ? 'improving' : 'declining',
       consistency: Math.abs(improvementPercentage) < 10 ? 'consistent' : 'variable',
@@ -289,7 +288,6 @@ const createOrUpdateEvaluation = async (req, res) => {
       existingEvaluation.criteria = normalizedCriteria;
       existingEvaluation.notes = notes;
       existingEvaluation.totalScore = aiData.totalScore;
-      existingEvaluation.aiFeedback = aiData.aiFeedback;
       existingEvaluation.aiInsights = aiData.aiInsights;
       existingEvaluation.improvementPercentage = aiData.improvementPercentage;
       existingEvaluation.performanceLevel = aiData.performanceLevel;
@@ -312,7 +310,6 @@ const createOrUpdateEvaluation = async (req, res) => {
         criteria: normalizedCriteria,
         notes,
         totalScore: aiData.totalScore,
-        aiFeedback: aiData.aiFeedback,
         aiInsights: aiData.aiInsights,
         improvementPercentage: aiData.improvementPercentage,
         performanceLevel: aiData.performanceLevel,

@@ -307,7 +307,7 @@ const TeamsPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsAddDialogOpen(false)}
-                className="border-white/20 "
+                className="border-white/20 text-white "
               >
                 Cancel
               </Button>
@@ -375,7 +375,7 @@ const TeamsPage = () => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setIsEditDialogOpen(false)}
-                className="border-white/20  "
+                className="border-white/20 text-white "
               >
                 Cancel
               </Button>

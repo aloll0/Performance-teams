@@ -43,15 +43,6 @@ const evaluationSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  aiFeedback: {
-    type: String,
-    default: ''
-  },
-  aiInsights: {
-    type: Map,
-    of: String,
-    default: {}
-  },
   improvementPercentage: {
     type: Number,
     default: 0
