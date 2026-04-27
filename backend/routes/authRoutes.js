@@ -1,5 +1,5 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 
@@ -9,6 +9,18 @@ router.post(
   '/login',
   [body('email').isEmail(), body('password').isString().notEmpty()],
   authController.login
+);
+router.post('/qr-token', authController.createQrToken);
+router.get(
+  '/qr-status/:token',
+  [param('token').isUUID().withMessage('QR token must be a valid UUID')],
+  authController.getQrTokenStatus
+);
+router.post(
+  '/qr-verify',
+  authenticate,
+  [body('token').isUUID().withMessage('QR token must be a valid UUID')],
+  authController.verifyQrToken
 );
 router.get('/me', authenticate, authController.getCurrentUser);
 router.post(

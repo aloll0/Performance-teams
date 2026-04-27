@@ -2,21 +2,32 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
 const EXPLICIT_API_BASE_URL = String(import.meta.env.VITE_API_URL || '').trim();
-const LOCAL_API_BASE_URL = 'http://localhost:5001/api';
+
+const isLocalHostname = (hostname: string) => hostname === 'localhost' || hostname === '127.0.0.1';
+
+const getHostnameFromUrl = (value: string) => {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return null;
+  }
+};
 
 const resolveApiBaseUrl = () => {
-  if (EXPLICIT_API_BASE_URL) return EXPLICIT_API_BASE_URL;
+  const runningInBrowser = typeof window !== 'undefined';
+  const runningOnLocalhost = runningInBrowser && isLocalHostname(window.location.hostname);
 
-  // In deployed environments, default to same-origin API route.
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1'
-  ) {
-    return '/api';
+  if (EXPLICIT_API_BASE_URL) {
+    const explicitHost = getHostnameFromUrl(EXPLICIT_API_BASE_URL);
+    const explicitIsLocal = explicitHost ? isLocalHostname(explicitHost) : false;
+
+    // In local development, prefer local proxy when env points to remote production API.
+    if (!(runningOnLocalhost && !explicitIsLocal)) {
+      return EXPLICIT_API_BASE_URL;
+    }
   }
 
-  return LOCAL_API_BASE_URL;
+  return '/api';
 };
 
 const API_BASE_URL = resolveApiBaseUrl();

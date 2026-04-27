@@ -5,6 +5,7 @@ import * as authApi from '@/services/authApi';
 
 interface AuthStore extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithToken: (payload: { token: string; user: User }) => void;
   logout: () => void;
   fetchCurrentUser: () => Promise<void>;
   updateUser: (user: User) => void;
@@ -34,6 +35,15 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: false });
           throw error;
         }
+      },
+
+      loginWithToken: ({ token, user }) => {
+        set({
+          token,
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
       },
 
       logout: () => {

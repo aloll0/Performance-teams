@@ -1,21 +1,111 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, QrCode, RefreshCcw, Smartphone } from 'lucide-react';
+import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import * as authApi from '@/services/authApi';
+
+const QR_POLL_INTERVAL_MS = 2000;
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuthStore();
+  const { login, loginWithToken, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [qrToken, setQrToken] = useState<string | null>(null);
+  const [qrImageUrl, setQrImageUrl] = useState<string>('');
+  const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
+  const [qrNow, setQrNow] = useState<number>(Date.now());
+  const [qrStatus, setQrStatus] = useState<'loading' | 'pending' | 'expired' | 'error'>('loading');
+
+  const qrSecondsLeft = useMemo(() => {
+    if (!qrExpiresAt) return 0;
+    const remainingMs = qrExpiresAt - qrNow;
+    return Math.max(0, Math.ceil(remainingMs / 1000));
+  }, [qrExpiresAt, qrNow]);
+
+  const loadQrToken = async () => {
+    try {
+      setQrStatus('loading');
+      setQrImageUrl('');
+
+      const response = await authApi.createQrLoginToken();
+      const { token, expiresAt } = response.data;
+      const imageUrl = await QRCode.toDataURL(token, {
+        width: 240,
+        margin: 1,
+      });
+
+      setQrToken(token);
+      setQrImageUrl(imageUrl);
+      setQrExpiresAt(new Date(expiresAt).getTime());
+      setQrStatus('pending');
+    } catch (error) {
+      console.error('Failed to create QR login token:', error);
+      setQrStatus('error');
+      toast.error('Could not generate QR login code');
+    }
+  };
+
+  useEffect(() => {
+    loadQrToken();
+  }, []);
+
+  useEffect(() => {
+    if (!qrExpiresAt || qrStatus !== 'pending') return;
+
+    const timer = window.setInterval(() => {
+      setQrNow(Date.now());
+      if (Date.now() >= qrExpiresAt) {
+        setQrStatus('expired');
+        setQrToken(null);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [qrExpiresAt, qrStatus]);
+
+  useEffect(() => {
+    if (!qrToken || qrStatus !== 'pending') return;
+
+    const poll = window.setInterval(async () => {
+      try {
+        const response = await authApi.getQrLoginStatus(qrToken);
+        if (response.data.status === 'approved' && response.data.token && response.data.user) {
+          loginWithToken({
+            token: response.data.token,
+            user: response.data.user,
+          });
+          toast.success('QR login successful!');
+          navigate('/dashboard');
+        }
+      } catch (error: any) {
+        const statusCode = error?.response?.status;
+        if (statusCode === 404 || statusCode === 410) {
+          setQrStatus('expired');
+          setQrToken(null);
+          return;
+        }
+
+        if (statusCode === 409) {
+          return;
+        }
+
+        console.error('QR polling error:', error);
+        setQrStatus('error');
+      }
+    }, QR_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(poll);
+  }, [qrToken, qrStatus, loginWithToken, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +131,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-[#0D132C] flex items-center justify-center p-4">
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Login Form */}
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
           <CardHeader className="space-y-1">
@@ -109,6 +199,62 @@ const LoginPage = () => {
                 )}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center gap-3">
+              <QrCode className="w-6 h-6 text-[#F26B21]" />
+              <div>
+                <CardTitle className="text-2xl text-white">Sign in with QR</CardTitle>
+                <CardDescription className="text-white/60">
+                  Scan using your logged-in mobile app session
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <div className="rounded-xl bg-white p-4 mx-auto w-fit">
+              {qrImageUrl && qrStatus === 'pending' ? (
+                <img src={qrImageUrl} alt="QR login code" className="w-60 h-60" />
+              ) : (
+                <div className="w-60 h-60 grid place-items-center text-slate-600 border border-dashed border-slate-300 rounded-md">
+                  <QrCode className="w-12 h-12" />
+                </div>
+              )}
+            </div>
+
+            <div className="text-center text-sm text-white/70">
+              {qrStatus === 'pending' && (
+                <p>Code expires in {qrSecondsLeft}s</p>
+              )}
+              {qrStatus === 'loading' && <p>Generating secure QR code...</p>}
+              {qrStatus === 'expired' && <p>QR code expired. Generate a new one.</p>}
+              {qrStatus === 'error' && <p>Could not load QR login. Please try again.</p>}
+            </div>
+
+            <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-white/70">
+              <p className="font-medium text-white mb-2 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-[#F26B21]" />
+                How to use
+              </p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Open the mobile app while already logged in.</li>
+                <li>Go to QR Login and scan this code.</li>
+                <li>Approve the login request on mobile.</li>
+              </ol>
+            </div>
+
+            <Button
+              type="button"
+              onClick={loadQrToken}
+              className="w-full bg-transparent border border-white/20 text-white hover:bg-white/10"
+            >
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              Refresh QR Code
+            </Button>
           </CardContent>
         </Card>
       </div>
