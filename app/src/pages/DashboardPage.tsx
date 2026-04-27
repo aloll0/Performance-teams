@@ -18,6 +18,7 @@ import { getDashboardAnalytics, getTeamLeaderPerformance } from '@/services/anal
 import { getAllQuizzes } from '@/services/quizApi';
 import { getMyWorkLogs } from '@/services/workLogApi';
 import type { DashboardAnalytics } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   XAxis, 
   YAxis, 
@@ -35,6 +36,7 @@ const COLORS = ['#F26B21', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
 const DashboardPage = () => {
   const { user } = useAuthStore();
+  const isMobile = useIsMobile();
   const isAdmin = user?.role === 'admin';
   const isEmployee = user?.role === 'employee';
   const canViewAnalytics = isAdmin || user?.role === 'team_leader';
@@ -92,14 +94,14 @@ const DashboardPage = () => {
   }) => (
     <Card className="bg-white/5 border-white/10">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-white/60 text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-white/60 text-xs sm:text-sm font-medium">{title}</CardTitle>
         <div className="p-2 rounded-lg bg-[#F26B21]/20">
           <Icon className="w-4 h-4 text-[#F26B21]" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="text-xl sm:text-2xl font-bold text-white">{value}</div>
+        <div className="flex flex-wrap items-center gap-2 mt-1">
           {trend && (
             <span className={`flex items-center text-xs ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
               {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
@@ -128,8 +130,8 @@ const DashboardPage = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">My Dashboard</h1>
-          <p className="text-white/60">Your team exams and today's work summary.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">My Dashboard</h1>
+          <p className="text-white/60 text-sm sm:text-base">Your team exams and today's work summary.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -197,8 +199,8 @@ const DashboardPage = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-white/60">Overview of your team's performance</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h1>
+        <p className="text-white/60 text-sm sm:text-base">Overview of your team's performance</p>
       </div>
 
       {/* Stats Grid */}
@@ -238,17 +240,17 @@ const DashboardPage = () => {
         {/* Monthly Trend Chart */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Monthly Performance Trend</CardTitle>
-            <CardDescription className="text-white/60">
+            <CardTitle className="text-white text-base sm:text-lg">Monthly Performance Trend</CardTitle>
+            <CardDescription className="text-white/60 text-xs sm:text-sm">
               Average scores over the last 6 months
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={isMobile ? 220 : 250}>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                <XAxis dataKey="month" stroke="#ffffff60" fontSize={12} />
-                <YAxis stroke="#ffffff60" fontSize={12} domain={[0, 100]} />
+                <XAxis dataKey="month" stroke="#ffffff60" fontSize={isMobile ? 10 : 12} />
+                <YAxis stroke="#ffffff60" fontSize={isMobile ? 10 : 12} domain={[0, 100]} width={isMobile ? 28 : 35} />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#0D132C', 
@@ -272,20 +274,20 @@ const DashboardPage = () => {
         {/* Performance Distribution */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Performance Distribution</CardTitle>
-            <CardDescription className="text-white/60">
+            <CardTitle className="text-white text-base sm:text-lg">Performance Distribution</CardTitle>
+            <CardDescription className="text-white/60 text-xs sm:text-sm">
               Breakdown by performance level
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={isMobile ? 220 : 250}>
               <PieChart>
                 <Pie
                   data={performanceData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={isMobile ? 45 : 60}
+                  outerRadius={isMobile ? 65 : 80}
                   paddingAngle={5}
                   dataKey="value"
                 >
@@ -302,14 +304,14 @@ const DashboardPage = () => {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-4">
               {performanceData.map((entry, index) => (
                 <div key={entry.name} className="flex items-center gap-2">
                   <div 
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   />
-                  <span className="text-white/70 text-sm">{entry.name}</span>
+                  <span className="text-white/70 text-xs sm:text-sm">{entry.name}</span>
                 </div>
               ))}
             </div>
@@ -329,42 +331,65 @@ const DashboardPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-white/60 font-medium">Team</th>
-                      <th className="text-left py-3 px-4 text-white/60 font-medium">Employees</th>
-                      <th className="text-left py-3 px-4 text-white/60 font-medium">Evaluations</th>
-                      <th className="text-left py-3 px-4 text-white/60 font-medium">Average Score</th>
-                      <th className="text-left py-3 px-4 text-white/60 font-medium">Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analytics?.teamStats.map((team) => (
-                      <tr key={team.teamName} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="py-3 px-4 text-white font-medium">{team.teamName}</td>
-                        <td className="py-3 px-4 text-white/70">{team.employeeCount}</td>
-                        <td className="py-3 px-4 text-white/70">{team.evaluationCount}</td>
-                        <td className="py-3 px-4">
-                          <span className={`font-semibold ${
-                            team.averageScore >= 80 ? 'text-green-400' :
-                            team.averageScore >= 60 ? 'text-yellow-400' : 'text-red-400'
-                          }`}>
-                            {team.averageScore}%
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Progress 
-                            value={team.averageScore} 
-                            className="h-2 w-24 bg-white/10"
-                          />
-                        </td>
+              {isMobile ? (
+                <div className="space-y-3">
+                  {analytics?.teamStats.map((team) => (
+                    <div key={team.teamName} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-white font-medium truncate">{team.teamName}</p>
+                        <span className={`font-semibold text-sm ${
+                          team.averageScore >= 80 ? 'text-green-400' :
+                          team.averageScore >= 60 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          {team.averageScore}%
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-white/70">
+                        <p>Employees: {team.employeeCount}</p>
+                        <p>Evaluations: {team.evaluationCount}</p>
+                      </div>
+                      <Progress value={team.averageScore} className="h-2 mt-3 bg-white/10" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-white/60 font-medium">Team</th>
+                        <th className="text-left py-3 px-4 text-white/60 font-medium">Employees</th>
+                        <th className="text-left py-3 px-4 text-white/60 font-medium">Evaluations</th>
+                        <th className="text-left py-3 px-4 text-white/60 font-medium">Average Score</th>
+                        <th className="text-left py-3 px-4 text-white/60 font-medium">Progress</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {analytics?.teamStats.map((team) => (
+                        <tr key={team.teamName} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-4 text-white font-medium">{team.teamName}</td>
+                          <td className="py-3 px-4 text-white/70">{team.employeeCount}</td>
+                          <td className="py-3 px-4 text-white/70">{team.evaluationCount}</td>
+                          <td className="py-3 px-4">
+                            <span className={`font-semibold ${
+                              team.averageScore >= 80 ? 'text-green-400' :
+                              team.averageScore >= 60 ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              {team.averageScore}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Progress
+                              value={team.averageScore}
+                              className="h-2 w-24 bg-white/10"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -374,7 +399,7 @@ const DashboardPage = () => {
               <CardTitle className="text-white">Team Leader Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teamLeaderPerformance?.map((leader: any) => (
                   <div 
                     key={leader.leader.id} 
@@ -427,7 +452,7 @@ const DashboardPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {analytics?.topPerformers.map((performer, index) => (
               <div 
                 key={performer.employee.id} 

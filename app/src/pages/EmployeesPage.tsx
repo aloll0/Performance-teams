@@ -43,12 +43,14 @@ import { getAllTeams } from '@/services/teamApi';
 import type { User } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const LEVELS = ['Fresh', 'Implementor', 'Maker', 'Pro', 'Mentor', 'Pro / Mentor'];
 
 const EmployeesPage = () => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const isAdmin = user?.role === 'admin';
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -326,8 +328,8 @@ const EmployeesPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Users</h1>
-          <p className="text-white/60">Manage company accounts</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Users</h1>
+          <p className="text-white/60 text-sm sm:text-base">Manage company accounts</p>
         </div>
         <Button 
           onClick={() => {
@@ -335,7 +337,7 @@ const EmployeesPage = () => {
             setIsAddDialogOpen(true);
           }}
           disabled={!isAdmin}
-          className="bg-[#F26B21] hover:bg-[#d85a1b] text-white"
+          className="bg-[#F26B21] hover:bg-[#d85a1b] text-white w-full sm:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Account
@@ -345,21 +347,23 @@ const EmployeesPage = () => {
       {/* Filters */}
       <Card className="bg-white/5 border-white/10">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <Input
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50"
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50 h-10"
               />
             </div>
             {isAdmin && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-white/50" />
+              <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr,1fr] gap-2 sm:items-center">
+                <div className="hidden sm:flex items-center">
+                  <Filter className="w-4 h-4 text-white/50" />
+                </div>
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
                     <SelectValue placeholder="Filter by role" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0D132C] border-white/10">
@@ -370,7 +374,7 @@ const EmployeesPage = () => {
                   </SelectContent>
                 </Select>
                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                  <SelectTrigger className="w-48 bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
                     <SelectValue placeholder="Filter by team" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0D132C] border-white/10">
@@ -397,68 +401,46 @@ const EmployeesPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-3 px-4 text-white/60 font-medium">Name</th>
-                  <th className="text-left py-3 px-4 text-white/60 font-medium">Email</th>
-                  <th className="text-left py-3 px-4 text-white/60 font-medium">Role</th>
-                  <th className="text-left py-3 px-4 text-white/60 font-medium">Team</th>
-                  <th className="text-left py-3 px-4 text-white/60 font-medium">Level</th>
-                  {isAdmin && <th className="text-left py-3 px-4 text-white/60 font-medium">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEmployees?.map((employee) => (
-                  <tr key={employee.id} className="border-b border-white/5 hover:bg-white/5">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#F26B21]/20 flex items-center justify-center overflow-hidden">
-                          {employee.avatar ? (
-                            <img src={employee.avatar} alt={employee.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[#F26B21] font-medium text-sm">
-                              {employee.name.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-white font-medium">{employee.name}</span>
+          {filteredEmployees?.length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-center text-white/60">
+              No users found.
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-3">
+              {filteredEmployees?.map((employee) => (
+                <div key={employee.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#F26B21]/20 flex items-center justify-center overflow-hidden shrink-0">
+                        {employee.avatar ? (
+                          <img src={employee.avatar} alt={employee.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[#F26B21] font-medium text-sm">
+                            {employee.name.charAt(0)}
+                          </span>
+                        )}
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-white/70">{employee.email}</td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className={getRoleBadgeClass(employee.role)}>
-                        {getRoleLabel(employee.role)}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className="border-white/20 text-white/70">
-                        {employee.team}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getLevelColor(employee.level || ''))}>
-                        {employee.role === 'employee' ? employee.level : '-'}
-                      </span>
-                    </td>
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate">{employee.name}</p>
+                        <p className="text-white/60 text-xs truncate">{employee.email}</p>
+                      </div>
+                    </div>
                     {isAdmin && (
-                    <td className="py-3 px-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-white/70 hover:text-black">
+                          <Button variant="ghost" size="sm" className="text-white/70">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="bg-[#0D132C] border-white/10">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => openEditDialog(employee)}
                             className="text-white hover:bg-white/10"
                           >
                             <Edit2 className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => openMoveDialog(employee)}
                             disabled={employee.role !== 'employee'}
                             className="text-white hover:bg-white/10"
@@ -475,7 +457,7 @@ const EmployeesPage = () => {
                               Reset Password
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDelete(employee.id)}
                             className="text-red-400 hover:bg-red-500/10"
                           >
@@ -484,19 +466,124 @@ const EmployeesPage = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </td>
                     )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Badge variant="outline" className={getRoleBadgeClass(employee.role)}>
+                      {getRoleLabel(employee.role)}
+                    </Badge>
+                    <Badge variant="outline" className="border-white/20 text-white/70">
+                      {employee.team}
+                    </Badge>
+                    <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getLevelColor(employee.level || ''))}>
+                      {employee.role === 'employee' ? employee.level : '-'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Name</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Email</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Role</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Team</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Level</th>
+                    {isAdmin && <th className="text-left py-3 px-4 text-white/60 font-medium">Actions</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredEmployees?.map((employee) => (
+                    <tr key={employee.id} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#F26B21]/20 flex items-center justify-center overflow-hidden">
+                            {employee.avatar ? (
+                              <img src={employee.avatar} alt={employee.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[#F26B21] font-medium text-sm">
+                                {employee.name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-white font-medium">{employee.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-white/70">{employee.email}</td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className={getRoleBadgeClass(employee.role)}>
+                          {getRoleLabel(employee.role)}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className="border-white/20 text-white/70">
+                          {employee.team}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getLevelColor(employee.level || ''))}>
+                          {employee.role === 'employee' ? employee.level : '-'}
+                        </span>
+                      </td>
+                      {isAdmin && (
+                        <td className="py-3 px-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-white/70 hover:text-black">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-[#0D132C] border-white/10">
+                              <DropdownMenuItem
+                                onClick={() => openEditDialog(employee)}
+                                className="text-white hover:bg-white/10"
+                              >
+                                <Edit2 className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => openMoveDialog(employee)}
+                                disabled={employee.role !== 'employee'}
+                                className="text-white hover:bg-white/10"
+                              >
+                                <Move className="w-4 h-4 mr-2" />
+                                Move Team
+                              </DropdownMenuItem>
+                              {employee.role !== 'admin' && (
+                                <DropdownMenuItem
+                                  onClick={() => openResetPasswordDialog(employee)}
+                                  className="text-white hover:bg-white/10"
+                                >
+                                  <KeyRound className="w-4 h-4 mr-2" />
+                                  Reset Password
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(employee.id)}
+                                className="text-red-400 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete this account
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Add Account Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="bg-[#0D132C] border-white/10 text-white">
+        <DialogContent className="bg-[#0D132C] border-white/10 text-white max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Add New Account</DialogTitle>
             <DialogDescription className="text-white/60">
@@ -612,7 +699,7 @@ const EmployeesPage = () => {
                 </Select>
               </div>
             )}
-            <DialogFooter>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -635,7 +722,7 @@ const EmployeesPage = () => {
 
       {/* Reset Password Dialog */}
       <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
-        <DialogContent className="bg-[#0D132C] border-white/10 text-white">
+        <DialogContent className="bg-[#0D132C] border-white/10 text-white max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Reset User Password</DialogTitle>
             <DialogDescription className="text-white/60">
@@ -667,7 +754,7 @@ const EmployeesPage = () => {
                 required
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -690,7 +777,7 @@ const EmployeesPage = () => {
 
       {/* Edit Employee Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-[#0D132C] border-white/10 text-white">
+        <DialogContent className="bg-[#0D132C] border-white/10 text-white max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Employee</DialogTitle>
             <DialogDescription className="text-white/60">
@@ -757,7 +844,7 @@ const EmployeesPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -780,7 +867,7 @@ const EmployeesPage = () => {
 
       {/* Move Employee Dialog */}
       <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
-        <DialogContent className="bg-[#0D132C] border-white/10 text-white">
+        <DialogContent className="bg-[#0D132C] border-white/10 text-white max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Move Employee</DialogTitle>
             <DialogDescription className="text-white/60">
@@ -806,7 +893,7 @@ const EmployeesPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button 
                 type="button" 
                 variant="outline" 

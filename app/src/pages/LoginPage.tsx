@@ -1,26 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, QrCode, RefreshCcw, Smartphone } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, QrCode, RefreshCcw, Smartphone, ArrowLeft } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import * as authApi from '@/services/authApi';
 
-const QR_POLL_INTERVAL_MS = 2000;
-
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, loginWithToken, isLoading } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [qrToken, setQrToken] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showQr, setShowQr] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const [qrImageUrl, setQrImageUrl] = useState<string>('');
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
   const [qrNow, setQrNow] = useState<number>(Date.now());
@@ -28,102 +24,59 @@ const LoginPage = () => {
 
   const qrSecondsLeft = useMemo(() => {
     if (!qrExpiresAt) return 0;
-    const remainingMs = qrExpiresAt - qrNow;
-    return Math.max(0, Math.ceil(remainingMs / 1000));
+    return Math.max(0, Math.ceil((qrExpiresAt - qrNow) / 1000));
   }, [qrExpiresAt, qrNow]);
 
   const loadQrToken = async () => {
     try {
       setQrStatus('loading');
-      setQrImageUrl('');
-
       const response = await authApi.createQrLoginToken();
       const { token, expiresAt } = response.data;
       const approveUrl = `${window.location.origin}/qr-approve?token=${encodeURIComponent(token)}`;
       const imageUrl = await QRCode.toDataURL(approveUrl, {
-        width: 240,
-        margin: 1,
+        width: 300,
+        margin: 2,
+        color: { dark: '#0D132C', light: '#FFFFFF' }
       });
-
-      setQrToken(token);
       setQrImageUrl(imageUrl);
       setQrExpiresAt(new Date(expiresAt).getTime());
       setQrStatus('pending');
     } catch (error) {
-      console.error('Failed to create QR login token:', error);
       setQrStatus('error');
       toast.error('Could not generate QR login code');
     }
   };
 
   useEffect(() => {
-    loadQrToken();
-  }, []);
-
-  useEffect(() => {
     if (!qrExpiresAt || qrStatus !== 'pending') return;
-
     const timer = window.setInterval(() => {
       setQrNow(Date.now());
       if (Date.now() >= qrExpiresAt) {
         setQrStatus('expired');
-        setQrToken(null);
       }
     }, 1000);
-
     return () => window.clearInterval(timer);
   }, [qrExpiresAt, qrStatus]);
 
-  useEffect(() => {
-    if (!qrToken || qrStatus !== 'pending') return;
+  const handleOpenQr = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setShowQr(true);
+    loadQrToken();
+    setTimeout(() => setIsAnimating(false), 500);
+  };
 
-    const poll = window.setInterval(async () => {
-      try {
-        const response = await authApi.getQrLoginStatus(qrToken);
-        if (response.data.status === 'approved' && response.data.token && response.data.user) {
-          loginWithToken({
-            token: response.data.token,
-            user: response.data.user,
-          });
-          toast.success('QR login successful!');
-          navigate('/dashboard');
-        }
-      } catch (error: any) {
-        const statusCode = error?.response?.status;
-        if (statusCode === 404 || statusCode === 410) {
-          setQrStatus('expired');
-          setQrToken(null);
-          return;
-        }
-
-        if (statusCode === 409) {
-          return;
-        }
-
-        console.error('QR polling error:', error);
-        setQrStatus('error');
-      }
-    }, QR_POLL_INTERVAL_MS);
-
-    return () => window.clearInterval(poll);
-  }, [qrToken, qrStatus, loginWithToken, navigate]);
+  const handleCloseQr = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setShowQr(false);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const normalizedEmail = formData.email.trim().toLowerCase();
-
-    if (!normalizedEmail || !formData.password) {
-      toast.error('Please enter both email and password');
-      return;
-    }
-
     try {
-      await login({
-        email: normalizedEmail,
-        password: formData.password
-      });
-      toast.success('Login successful!');
+      await login({ email: formData.email.trim().toLowerCase(), password: formData.password });
       navigate('/dashboard');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed');
@@ -131,59 +84,58 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D132C] flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Login Form */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                {/* <span className="text-white font-bold text-xl">EP</span> */}
-                <img src="/logo.svg" alt="Logo" />
+    <div className="min-h-screen bg-[#060b1d] bg-[radial-gradient(circle_at_50%_50%,_#131b3d_0%,_#060b1d_100%)] flex items-center justify-center p-6">
+
+      <div className="w-full max-w-md relative overflow-hidden bg-white/[0.03] border border-white/10 backdrop-blur-xl rounded-[2rem] shadow-2xl">
+
+        <div
+          className="flex transition-transform duration-500 ease-[cubic-bezier(0.77,0,0.175,1)]"
+          style={{ transform: showQr ? 'translateX(-50%)' : 'translateX(0%)', width: '200%' }}
+        >
+
+          <div className="w-1/2 p-8 lg:p-10 flex-shrink-0">
+            <div className="flex items-center gap-4 mb-10">
+              <div className="w-14 h-14 bg-gradient-to-tr from-[#F26B21] to-[#ff9d6a] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F26B21]/20">
+                <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-white">Welcome Back themiify</CardTitle>
-                <CardDescription className="text-white/60">
-                  Sign in to your account
-                </CardDescription>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Welcome Back</h1>
+                <p className="text-white/50 text-sm">Sign in to themiify dashboard</p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
+                <Label className="text-white/80 text-xs uppercase tracking-widest ml-1">Email Address</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#F26B21]" />
                   <Input
-                    id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="admin@demo.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-[#F26B21] focus:ring-[#F26B21]"
+                    className="h-14 pl-12 bg-white/[0.05] border-white/10 text-white rounded-xl focus:ring-1 focus:ring-[#F26B21] transition-all"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">Password</Label>
+                <Label className="text-white/80 text-xs uppercase tracking-widest ml-1">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#F26B21]" />
                   <Input
-                    id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
+                    placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/50 focus:border-[#F26B21] focus:ring-[#F26B21]"
+                    className="h-14 pl-12 pr-12 bg-white/[0.05] border-white/10 text-white rounded-xl focus:ring-1 focus:ring-[#F26B21] transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#F26B21]"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -191,73 +143,90 @@ const LoginPage = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#F26B21] hover:bg-[#d85a1b] text-white font-semibold py-6"
+                className="w-full h-14 bg-gradient-to-r from-[#F26B21] to-[#ff8c4a] hover:opacity-90 text-white font-bold text-lg rounded-xl shadow-lg shadow-[#F26B21]/20 transition-all active:scale-[0.98]"
               >
-                {isLoading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                ) : (
-                  'Sign In'
-                )}
+                {isLoading ? 'Signing in…' : 'Sign In'}
               </Button>
             </form>
-          </CardContent>
-        </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center gap-3">
-              <QrCode className="w-6 h-6 text-[#F26B21]" />
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-[11px] text-white/30 uppercase tracking-widest font-semibold">or</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            <button
+              onClick={handleOpenQr}
+              className="group w-full flex items-center justify-between px-5 h-14 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-[#F26B21]/40 transition-all duration-200"
+            >
+              <div className="flex items-center gap-3">
+                <QrCode className="w-5 h-5 text-[#F26B21]" />
+                <span className="text-white/70 group-hover:text-white text-sm font-medium transition-colors">
+                  Login with QR Code
+                </span>
+              </div>
+              <span className="text-[#F26B21] opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-1 transition-all duration-200 text-lg">→</span>
+            </button>
+          </div>
+
+          <div className="w-1/2 p-8 lg:p-10 flex-shrink-0 bg-white/[0.01]">
+            <div className="flex items-center gap-3 mb-8">
+              <button
+                onClick={handleCloseQr}
+                className="w-9 h-9 rounded-xl border border-white/10 bg-white/[0.05] flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
               <div>
-                <CardTitle className="text-2xl text-white">Sign in with QR</CardTitle>
-                <CardDescription className="text-white/60">
-                  Scan using your logged-in mobile app session
-                </CardDescription>
+                <h2 className="text-lg font-semibold text-white">Quick Scan</h2>
+                <p className="text-white/40 text-xs">Login with your mobile app</p>
               </div>
             </div>
-          </CardHeader>
 
-          <CardContent className="space-y-4">
-            <div className="rounded-xl bg-white p-4 mx-auto w-fit">
-              {qrImageUrl && qrStatus === 'pending' ? (
-                <img src={qrImageUrl} alt="QR login code" className="w-60 h-60" />
-              ) : (
-                <div className="w-60 h-60 grid place-items-center text-slate-600 border border-dashed border-slate-300 rounded-md">
-                  <QrCode className="w-12 h-12" />
+            <div className="flex flex-col items-center gap-5">
+              <div className="relative p-4 bg-white rounded-[1.75rem] shadow-2xl shadow-black/50 overflow-hidden group">
+                {qrImageUrl && qrStatus === 'pending' ? (
+                  <>
+                    <img src={qrImageUrl} alt="QR Code" className="w-56 h-56" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 backdrop-blur-[2px]">
+                      <img src="/logo.svg" className="w-10 h-10 p-2 bg-white rounded-full shadow-lg" alt="" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-56 h-56 flex items-center justify-center bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300">
+                    <RefreshCcw className={`w-10 h-10 text-slate-400 ${qrStatus === 'loading' ? 'animate-spin' : ''}`} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 rounded-full border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-[#F26B21] animate-pulse" />
+                <p className="text-xs font-mono text-white/70">
+                  {qrStatus === 'pending'
+                    ? `Expires in ${qrSecondsLeft}s`
+                    : 'QR Code Status: ' + qrStatus}
+                </p>
+              </div>
+
+              <div className="w-full p-4 bg-white/[0.03] border border-white/10 rounded-2xl">
+                <div className="flex items-start gap-3 text-xs text-white/60 leading-relaxed">
+                  <Smartphone className="w-5 h-5 text-[#F26B21] shrink-0 mt-0.5" />
+                  <p>Open <b>themiify mobile</b>, scan the code, and confirm the login request to proceed.</p>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="text-center text-sm text-white/70">
-              {qrStatus === 'pending' && (
-                <p>Code expires in {qrSecondsLeft}s</p>
-              )}
-              {qrStatus === 'loading' && <p>Generating secure QR code...</p>}
-              {qrStatus === 'expired' && <p>QR code expired. Generate a new one.</p>}
-              {qrStatus === 'error' && <p>Could not load QR login. Please try again.</p>}
+              <Button
+                onClick={loadQrToken}
+                variant="ghost"
+                className="w-full text-white/40 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <RefreshCcw className="w-4 h-4 mr-2" />
+                Regenerate Code
+              </Button>
             </div>
+          </div>
 
-            <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-white/70">
-              <p className="font-medium text-white mb-2 flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-[#F26B21]" />
-                How to use
-              </p>
-              <ol className="list-decimal pl-5 space-y-1">
-                <li>Open the mobile app while already logged in.</li>
-                <li>Go to QR Login and scan this code.</li>
-                <li>Approve the login request on mobile.</li>
-              </ol>
-            </div>
-
-            <Button
-              type="button"
-              onClick={loadQrToken}
-              className="w-full bg-transparent border border-white/20 text-white hover:bg-white/10"
-            >
-              <RefreshCcw className="w-4 h-4 mr-2" />
-              Refresh QR Code
-            </Button>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
