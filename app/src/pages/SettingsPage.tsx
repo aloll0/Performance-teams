@@ -4,7 +4,6 @@ import { useMutation } from '@tanstack/react-query';
 import { 
   Settings, 
   Lock, 
-  Bell, 
   Camera,
   Trash2,
   Shield,
@@ -14,8 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { changePassword } from '@/services/authApi';
 import { deleteUser, removeMyAvatar, updateMyAvatar } from '@/services/userApi';
 import { useAuthStore } from '@/store/authStore';
@@ -31,12 +28,6 @@ const SettingsPage = () => {
   });
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
 
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    evaluationReminders: true,
-    darkMode: true,
-    language: 'en'
-  });
 
   const passwordMutation = useMutation({
     mutationFn: changePassword,
