@@ -12,6 +12,7 @@ import QuizzesPage from '@/pages/QuizzesPage';
 import QuizDetailPage from '@/pages/QuizDetailPage';
 import WorkLogsPage from '@/pages/WorkLogsPage';
 import TeamsPage from '@/pages/TeamsPage';
+import QrApprovePage from '@/pages/QrApprovePage';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import './App.css';
@@ -37,6 +38,7 @@ function App() {
             path="/login" 
             element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />} 
           />
+          <Route path="/qr-approve" element={<QrApprovePage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<DashboardPage />} />

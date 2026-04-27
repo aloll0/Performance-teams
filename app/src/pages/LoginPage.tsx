@@ -39,7 +39,8 @@ const LoginPage = () => {
 
       const response = await authApi.createQrLoginToken();
       const { token, expiresAt } = response.data;
-      const imageUrl = await QRCode.toDataURL(token, {
+      const approveUrl = `${window.location.origin}/qr-approve?token=${encodeURIComponent(token)}`;
+      const imageUrl = await QRCode.toDataURL(approveUrl, {
         width: 240,
         margin: 1,
       });
